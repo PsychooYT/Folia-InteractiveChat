@@ -24,25 +24,9 @@ import com.loohp.interactivechat.InteractiveChat;
 import com.loohp.interactivechat.api.InteractiveChatAPI;
 import com.loohp.interactivechat.api.events.PreExternalResponseSendEvent;
 import com.loohp.interactivechat.data.PlayerDataManager.PlayerData;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder;
-import com.loohp.interactivechat.objectholders.ICPlaceholder;
-import com.loohp.interactivechat.objectholders.ICPlayer;
-import com.loohp.interactivechat.objectholders.ICPlayerFactory;
-import com.loohp.interactivechat.objectholders.ProcessSenderResult;
-import com.loohp.interactivechat.objectholders.WebData;
+import com.loohp.interactivechat.objectholders.*;
 import com.loohp.interactivechat.registry.Registry;
-import com.loohp.interactivechat.utils.ChatColorUtils;
-import com.loohp.interactivechat.utils.ComponentFont;
-import com.loohp.interactivechat.utils.ComponentModernizing;
-import com.loohp.interactivechat.utils.ComponentReplacing;
-import com.loohp.interactivechat.utils.CustomStringUtils;
-import com.loohp.interactivechat.utils.InteractiveChatComponentSerializer;
-import com.loohp.interactivechat.utils.ItemStackUtils;
-import com.loohp.interactivechat.utils.JsonUtils;
-import com.loohp.interactivechat.utils.MCVersion;
-import com.loohp.interactivechat.utils.PlaceholderParser;
-import com.loohp.interactivechat.utils.PlayerUtils;
-import com.loohp.interactivechat.utils.RarityUtils;
+import com.loohp.interactivechat.utils.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.md_5.bungee.api.ChatColor;
@@ -51,6 +35,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -85,7 +70,8 @@ public class ProcessExternalMessage {
         } else {
             try {
                 Object obj = getInstance();
-                Method processWithoutReceiver0Method = obj.getClass().getMethod("processWithoutReceiver0", String.class);
+                Method processWithoutReceiver0Method = obj.getClass()
+                                                          .getMethod("processWithoutReceiver0", String.class);
                 return (String) processWithoutReceiver0Method.invoke(obj, message);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -100,7 +86,12 @@ public class ProcessExternalMessage {
         } else {
             try {
                 Object obj = getInstance();
-                Method processAndRespond0Method = obj.getClass().getMethod("processAndRespond0", Player.class, String.class, boolean.class);
+                Method processAndRespond0Method = obj.getClass()
+                                                     .getMethod("processAndRespond0",
+                                                             Player.class,
+                                                             String.class,
+                                                             boolean.class
+                                                     );
                 return (String) processAndRespond0Method.invoke(obj, receiver, component, preview);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -119,7 +110,9 @@ public class ProcessExternalMessage {
             sender = ICPlayerFactory.getICPlayer(senderUUID);
         }
 
-        message = message.replaceAll(ProcessCommands.COLOR_IGNORE_PATTERN_0.pattern(), "").replaceAll(ProcessCommands.COLOR_IGNORE_PATTERN_1.pattern(), "").replaceAll(ProcessAccurateSender.COLOR_IGNORE_PATTERN.pattern(), "");
+        message = message.replaceAll(ProcessCommands.COLOR_IGNORE_PATTERN_0.pattern(), "")
+                         .replaceAll(ProcessCommands.COLOR_IGNORE_PATTERN_1.pattern(), "")
+                         .replaceAll(ProcessAccurateSender.COLOR_IGNORE_PATTERN.pattern(), "");
         message = message.replaceAll(ProcessAccurateSender.PATTERN_0.pattern(), "$2");
         Matcher matcher = ProcessAccurateSender.PATTERN_0.matcher(message);
         StringBuffer sb = new StringBuffer();
@@ -154,14 +147,31 @@ public class ProcessExternalMessage {
         for (ICPlaceholder placeholder : InteractiveChatAPI.getICPlaceholderList()) {
             if (!placeholder.isBuildIn()) {
                 CustomPlaceholder customP = (CustomPlaceholder) placeholder;
-                if (!InteractiveChat.useCustomPlaceholderPermissions || (InteractiveChat.useCustomPlaceholderPermissions && PlayerUtils.hasPermission(sender.getUniqueId(), customP.getPermission(), true, 250))) {
+                if (!InteractiveChat.useCustomPlaceholderPermissions || (InteractiveChat.useCustomPlaceholderPermissions && PlayerUtils.hasPermission(
+                        sender.getUniqueId(),
+                        customP.getPermission(),
+                        true,
+                        250
+                ))) {
                     if (customP.getKeyword().matcher(message).find()) {
                         if (customP.getReplace().isEnabled()) {
-                            String replace = ChatColor.WHITE + ChatColorUtils.translateAlternateColorCodes('&', PlaceholderParser.parse(sender, customP.getReplace().getReplaceText()));
-                            component = ComponentReplacing.replace(component, customP.getKeyword().pattern(), true, result -> {
-                                String replaceString = CustomStringUtils.applyReplacementRegex(replace, result, 1);
-                                return LegacyComponentSerializer.legacySection().deserialize(replaceString);
-                            });
+                            String replace = ChatColor.WHITE + ChatColorUtils.translateAlternateColorCodes(
+                                    '&',
+                                    PlaceholderParser.parse(sender, customP.getReplace().getReplaceText())
+                            );
+                            component = ComponentReplacing.replace(
+                                    component,
+                                    customP.getKeyword().pattern(),
+                                    true,
+                                    result -> {
+                                        String replaceString = CustomStringUtils.applyReplacementRegex(
+                                                replace,
+                                                result,
+                                                1
+                                        );
+                                        return LegacyComponentSerializer.legacySection().deserialize(replaceString);
+                                    }
+                            );
                         }
                     }
                 }
@@ -172,24 +182,41 @@ public class ProcessExternalMessage {
             for (CustomPlaceholder customP : WebData.getInstance().getSpecialPlaceholders()) {
                 if (customP.getKeyword().matcher(message).find()) {
                     if (customP.getReplace().isEnabled()) {
-                        String replace = ChatColor.WHITE + ChatColorUtils.translateAlternateColorCodes('&', PlaceholderParser.parse(sender, customP.getReplace().getReplaceText()));
-                        component = ComponentReplacing.replace(component, customP.getKeyword().pattern(), true, result -> {
-                            String replaceString = CustomStringUtils.applyReplacementRegex(replace, result, 1);
-                            return LegacyComponentSerializer.legacySection().deserialize(replaceString);
-                        });
+                        String replace = ChatColor.WHITE + ChatColorUtils.translateAlternateColorCodes(
+                                '&',
+                                PlaceholderParser.parse(sender, customP.getReplace().getReplaceText())
+                        );
+                        component = ComponentReplacing.replace(
+                                component,
+                                customP.getKeyword().pattern(),
+                                true,
+                                result -> {
+                                    String replaceString = CustomStringUtils.applyReplacementRegex(replace, result, 1);
+                                    return LegacyComponentSerializer.legacySection().deserialize(replaceString);
+                                }
+                        );
                     }
                 }
             }
         }
 
-        if (InteractiveChat.useItem && PlayerUtils.hasPermission(sender.getUniqueId(), "interactivechat.module.item", true, 250)) {
+        if (InteractiveChat.useItem && PlayerUtils.hasPermission(
+                sender.getUniqueId(),
+                "interactivechat.module.item",
+                true,
+                250
+        )) {
             Pattern placeholder = InteractiveChat.itemPlaceholder.getKeyword();
             if (placeholder.matcher(message).find()) {
                 ItemStack item = sender.getEquipment().getItemInHand();
                 if (item == null) {
                     item = new ItemStack(Material.AIR);
                 }
-                String itemStr = InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(ItemStackUtils.getDisplayName(item), InteractiveChat.language);
+                String itemStr = InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                                   .serialize(
+                                                                           ItemStackUtils.getDisplayName(item),
+                                                                           InteractiveChat.language
+                                                                   );
 
                 int amount = item.getAmount();
                 if (item == null || item.getType().equals(Material.AIR)) {
@@ -200,31 +227,68 @@ public class ProcessExternalMessage {
 
                 String replaceText;
                 if (amount == 1) {
-                    replaceText = PlaceholderParser.parse(sender, InteractiveChat.itemSingularReplaceText.replace("{Item}", itemStr));
+                    replaceText = PlaceholderParser.parse(
+                            sender,
+                            InteractiveChat.itemSingularReplaceText.replace("{Item}", itemStr)
+                    );
                 } else {
-                    replaceText = PlaceholderParser.parse(sender, InteractiveChat.itemReplaceText.replace("{Amount}", String.valueOf(amount)).replace("{Item}", itemStr));
+                    replaceText = PlaceholderParser.parse(
+                            sender,
+                            InteractiveChat.itemReplaceText.replace("{Amount}", String.valueOf(amount))
+                                                           .replace("{Item}", itemStr)
+                    );
                 }
-                component = ComponentReplacing.replace(component, placeholder.pattern(), true, LegacyComponentSerializer.legacySection().deserialize(replaceText));
+                component = ComponentReplacing.replace(
+                        component,
+                        placeholder.pattern(),
+                        true,
+                        LegacyComponentSerializer.legacySection().deserialize(replaceText)
+                );
             }
         }
 
-        if (InteractiveChat.useInventory && PlayerUtils.hasPermission(sender.getUniqueId(), "interactivechat.module.inventory", true, 250)) {
+        if (InteractiveChat.useInventory && PlayerUtils.hasPermission(
+                sender.getUniqueId(),
+                "interactivechat.module.inventory",
+                true,
+                250
+        )) {
             Pattern placeholder = InteractiveChat.invPlaceholder.getKeyword();
             if (placeholder.matcher(message).find()) {
                 String replaceText = PlaceholderParser.parse(sender, InteractiveChat.invReplaceText);
-                component = ComponentReplacing.replace(component, placeholder.pattern(), true, LegacyComponentSerializer.legacySection().deserialize(replaceText));
+                component = ComponentReplacing.replace(
+                        component,
+                        placeholder.pattern(),
+                        true,
+                        LegacyComponentSerializer.legacySection().deserialize(replaceText)
+                );
             }
         }
 
-        if (InteractiveChat.useEnder && PlayerUtils.hasPermission(sender.getUniqueId(), "interactivechat.module.enderchest", true, 250)) {
+        if (InteractiveChat.useEnder && PlayerUtils.hasPermission(
+                sender.getUniqueId(),
+                "interactivechat.module.enderchest",
+                true,
+                250
+        )) {
             Pattern placeholder = InteractiveChat.enderPlaceholder.getKeyword();
             if (placeholder.matcher(message).find()) {
                 String replaceText = PlaceholderParser.parse(sender, InteractiveChat.enderReplaceText);
-                component = ComponentReplacing.replace(component, placeholder.pattern(), true, LegacyComponentSerializer.legacySection().deserialize(replaceText));
+                component = ComponentReplacing.replace(
+                        component,
+                        placeholder.pattern(),
+                        true,
+                        LegacyComponentSerializer.legacySection().deserialize(replaceText)
+                );
             }
         }
 
-        return LegacyComponentSerializer.builder().character(ChatColorUtils.COLOR_CHAR).hexColors().useUnusualXRepeatedCharacterHexFormat().build().serialize(component);
+        return LegacyComponentSerializer.builder()
+                                        .character(ChatColorUtils.COLOR_CHAR)
+                                        .hexColors()
+                                        .useUnusualXRepeatedCharacterHexFormat()
+                                        .build()
+                                        .serialize(component);
     }
 
     public String processAndRespond0(Player receiver, String json, boolean preview) throws Exception {
@@ -241,7 +305,11 @@ public class ProcessExternalMessage {
             return json;
         }
 
-        if ((InteractiveChat.version.isOld()) && JsonUtils.containsKey(InteractiveChatComponentSerializer.gson().serialize(component), "translate")) {
+        if ((InteractiveChat.version.isOld()) && JsonUtils.containsKey(
+                InteractiveChatComponentSerializer.gson()
+                                                  .serialize(component),
+                "translate"
+        )) {
             return json;
         }
 
@@ -296,7 +364,11 @@ public class ProcessExternalMessage {
             server = ICPlayer.LOCAL_SERVER_REPRESENTATION;
         }
 
-        component = ComponentReplacing.replace(component, Registry.ID_PATTERN.pattern(), Registry.ID_PATTERN_REPLACEMENT);
+        component = ComponentReplacing.replace(
+                component,
+                Registry.ID_PATTERN.pattern(),
+                Registry.ID_PATTERN_REPLACEMENT
+        );
 
         if (InteractiveChat.usePlayerName) {
             component = PlayernameDisplay.process(component, sender, receiver, unix);
@@ -308,9 +380,14 @@ public class ProcessExternalMessage {
                 component = MentionDisplay.process(component, receiver, sender.get(), unix, !Bukkit.isPrimaryThread());
             }
         }
-        component = ComponentReplacing.replace(component, Registry.MENTION_TAG_CONVERTER.getReversePattern().pattern(), true, (result, components) -> {
-            return LegacyComponentSerializer.legacySection().deserialize(result.group(2));
-        });
+        component = ComponentReplacing.replace(
+                component,
+                Registry.MENTION_TAG_CONVERTER.getReversePattern().pattern(),
+                true,
+                (result, components) -> {
+                    return LegacyComponentSerializer.legacySection().deserialize(result.group(2));
+                }
+        );
 
         Collection<ICPlaceholder> serverPlaceholderList = InteractiveChat.remotePlaceholderList.get(server);
         if (server.equals(ICPlayer.LOCAL_SERVER_REPRESENTATION) || serverPlaceholderList == null) {
@@ -335,19 +412,31 @@ public class ProcessExternalMessage {
         }
 
         if (InteractiveChat.version.isNewerOrEqualTo(MCVersion.V1_16) && InteractiveChat.fontTags) {
-            if (!sender.isPresent() || (sender.isPresent() && PlayerUtils.hasPermission(sender.get().getUniqueId(), "interactivechat.customfont.translate", true, 5))) {
+            if (!sender.isPresent() || (sender.isPresent() && PlayerUtils.hasPermission(
+                    sender.get().getUniqueId(),
+                    "interactivechat.customfont.translate",
+                    true,
+                    5
+            ))) {
                 component = ComponentFont.parseFont(component);
             }
         }
 
-        Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskLater(() -> {
             InteractiveChat.keyTime.remove(rawMessageKey);
             InteractiveChat.keyPlayer.remove(rawMessageKey);
         }, 5);
 
         String newJson = InteractiveChatComponentSerializer.gson().serialize(component);
 
-        PreExternalResponseSendEvent event = new PreExternalResponseSendEvent(!Bukkit.isPrimaryThread(), receiver, component, sender.map(each -> each.getUniqueId()).orElse(null), originalComponent, InteractiveChat.sendOriginalIfTooLong);
+        PreExternalResponseSendEvent event = new PreExternalResponseSendEvent(
+                !Bukkit.isPrimaryThread(),
+                receiver,
+                component,
+                sender.map(each -> each.getUniqueId()).orElse(null),
+                originalComponent,
+                InteractiveChat.sendOriginalIfTooLong
+        );
         Bukkit.getPluginManager().callEvent(event);
 
         if (event.isSendOriginalIfCancelled() && newJson.length() > InteractiveChat.packetStringMaxLength) {

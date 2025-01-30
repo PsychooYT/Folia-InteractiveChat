@@ -24,7 +24,7 @@ import com.loohp.interactivechat.InteractiveChat;
 import com.loohp.interactivechat.utils.PlayerUtils;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.event.user.UserDataRecalculateEvent;
-import org.bukkit.Bukkit;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -41,7 +41,7 @@ public class LuckPermsEvents {
             UUID uuid = event.getUser().getUniqueId();
             if (!scheduledReset.contains(uuid)) {
                 scheduledReset.add(uuid);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                FoliaUtil.scheduler.runTaskLater(() -> {
                     PlayerUtils.resetPermissionCache(uuid);
                     scheduledReset.remove(uuid);
                 }, 1);

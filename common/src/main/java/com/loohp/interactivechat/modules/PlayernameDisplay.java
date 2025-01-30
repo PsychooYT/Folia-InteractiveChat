@@ -24,12 +24,7 @@ import com.loohp.interactivechat.InteractiveChat;
 import com.loohp.interactivechat.objectholders.ICPlayer;
 import com.loohp.interactivechat.objectholders.ICPlayerFactory;
 import com.loohp.interactivechat.objectholders.ReplaceTextBundle;
-import com.loohp.interactivechat.utils.ChatColorUtils;
-import com.loohp.interactivechat.utils.CollectionUtils;
-import com.loohp.interactivechat.utils.ComponentCompacting;
-import com.loohp.interactivechat.utils.ComponentReplacing;
-import com.loohp.interactivechat.utils.CustomStringUtils;
-import com.loohp.interactivechat.utils.PlaceholderParser;
+import com.loohp.interactivechat.utils.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TranslatableComponent;
@@ -44,16 +39,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlayernameDisplay implements Listener {
@@ -64,10 +52,10 @@ public class PlayernameDisplay implements Listener {
 
     public static void setup() {
         Bukkit.getPluginManager().registerEvents(new PlayernameDisplay(), InteractiveChat.plugin);
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             int valid = flag.get();
             Collection<ReplaceTextBundle> names = getNames();
-            Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> {
+            FoliaUtil.scheduler.runTask(() -> {
                 if (flag.get() == valid) {
                     PlayernameDisplay.names = names;
                 }
@@ -83,7 +71,15 @@ public class PlayernameDisplay implements Listener {
 
         Set<HoverEvent<?>> doNotReplace = new HashSet<>();
         for (ReplaceTextBundle entry : names) {
-            component = processPlayer(entry.getPlaceholder(), entry.getPlayer(), sender, receiver, component, doNotReplace, unix);
+            component = processPlayer(
+                    entry.getPlaceholder(),
+                    entry.getPlayer(),
+                    sender,
+                    receiver,
+                    component,
+                    doNotReplace,
+                    unix
+            );
         }
         return ComponentCompacting.optimize(component);
     }
@@ -102,18 +98,26 @@ public class PlayernameDisplay implements Listener {
         HoverEvent<?> hoverEvent;
         ClickEvent clickEvent;
         if (InteractiveChat.usePlayerNameHoverEnable) {
-            String playertext = ChatColorUtils.translateAlternateColorCodes('&', PlaceholderParser.parse(player, InteractiveChat.usePlayerNameHoverText));
+            String playertext = ChatColorUtils.translateAlternateColorCodes(
+                    '&',
+                    PlaceholderParser.parse(player, InteractiveChat.usePlayerNameHoverText)
+            );
             hoverEvent = HoverEvent.showText(LegacyComponentSerializer.legacySection().deserialize(playertext));
         } else {
             hoverEvent = null;
         }
         if (InteractiveChat.usePlayerNameClickEnable) {
             String playertext = PlaceholderParser.parse(player, InteractiveChat.usePlayerNameClickValue);
-            clickEvent = ClickEvent.clickEvent(ClickEvent.Action.valueOf(InteractiveChat.usePlayerNameClickAction), playertext);
+            clickEvent = ClickEvent.clickEvent(
+                    ClickEvent.Action.valueOf(InteractiveChat.usePlayerNameClickAction),
+                    playertext
+            );
         } else {
             clickEvent = null;
         }
-        String regex = InteractiveChat.usePlayerNameCaseSensitive ? CustomStringUtils.escapeMetaCharacters(placeholder) : "(?i)" + CustomStringUtils.escapeMetaCharacters(placeholder);
+        String regex = InteractiveChat.usePlayerNameCaseSensitive ?
+                       CustomStringUtils.escapeMetaCharacters(placeholder) :
+                       "(?i)" + CustomStringUtils.escapeMetaCharacters(placeholder);
         component = ComponentReplacing.replace(component, regex, true, (result, replaced) -> {
             List<Component> children = new ArrayList<>();
             boolean doNotReplaceFlag = false;
@@ -142,7 +146,15 @@ public class PlayernameDisplay implements Listener {
             if (child instanceof TranslatableComponent) {
                 TranslatableComponent trans = (TranslatableComponent) child;
                 List<Component> withs = new ArrayList<>(ComponentLike.asComponents(trans.arguments()));
-                withs.replaceAll(with -> processPlayer(placeholder, player, sender, receiver, with, doNotReplace, unix));
+                withs.replaceAll(with -> processPlayer(
+                        placeholder,
+                        player,
+                        sender,
+                        receiver,
+                        with,
+                        doNotReplace,
+                        unix
+                ));
                 trans = trans.arguments(withs);
                 children.set(i, trans);
             }
@@ -158,8 +170,13 @@ public class PlayernameDisplay implements Listener {
                 return;
             }
             names.add(new ReplaceTextBundle(ChatColorUtils.stripColor(each.getName()), each, each.getName()));
-            if (InteractiveChat.useBukkitDisplayName && !ChatColorUtils.stripColor(each.getName()).equals(ChatColorUtils.stripColor(each.getDisplayName()))) {
-                names.add(new ReplaceTextBundle(ChatColorUtils.stripColor(each.getDisplayName()), each, each.getDisplayName()));
+            if (InteractiveChat.useBukkitDisplayName && !ChatColorUtils.stripColor(each.getName())
+                                                                       .equals(ChatColorUtils.stripColor(each.getDisplayName()))) {
+                names.add(new ReplaceTextBundle(
+                        ChatColorUtils.stripColor(each.getDisplayName()),
+                        each,
+                        each.getDisplayName()
+                ));
             }
             for (String nickname : each.getNicknames()) {
                 names.add(new ReplaceTextBundle(ChatColorUtils.stripColor(nickname), each, nickname));

@@ -20,16 +20,11 @@
 
 package com.loohp.interactivechat.objectholders;
 
-import com.loohp.interactivechat.InteractiveChat;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.ClickEventAction;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.CustomPlaceholderClickEvent;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.CustomPlaceholderHoverEvent;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.CustomPlaceholderReplaceText;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.ParsePlayer;
+import com.loohp.interactivechat.objectholders.CustomPlaceholder.*;
 import com.loohp.interactivechat.utils.HTTPRequestUtils;
-import org.bukkit.Bukkit;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +45,7 @@ public class WebData {
         }
         return INSTANCE;
     }
+
     private JSONObject json;
     private List<CustomPlaceholder> specialPlaceholders;
 
@@ -65,7 +61,10 @@ public class WebData {
         nana.put("keyword", "(?i)\\[NARS~\\]");
         nana.put("cooldown", 0);
         nana.put("hoverEnabled", true);
-        nana.put("hoverText", "\u00a77\u00a76\u00a7oStay Wild.\u00a7f\n     \u00a77~\u00a7e\u00a7lN \u00a7b\u00a7o(IC Author's \u00a7c\u00a7oAdorable\u00a7b\u00a7o)");
+        nana.put(
+                "hoverText",
+                "\u00a77\u00a76\u00a7oStay Wild.\u00a7f\n     \u00a77~\u00a7e\u00a7lN \u00a7b\u00a7o(IC Author's \u00a7c\u00a7oAdorable\u00a7b\u00a7o)"
+        );
         nana.put("clickEnabled", true);
         nana.put("clickAction", "OPEN_URL");
         nana.put("clickValue", "https://www.instagram.com/narliar/");
@@ -79,7 +78,7 @@ public class WebData {
     }
 
     private void run() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             reload();
         }, 18000, 18000);
     }
@@ -94,7 +93,24 @@ public class WebData {
         for (Object obj : (JSONArray) json.get("special-placeholders")) {
             JSONObject each = (JSONObject) obj;
             String name = (String) each.get("name");
-            specialPlaceholders.add(new CustomPlaceholder(name, ParsePlayer.valueOf((String) each.get("parseplayer")), Pattern.compile((String) each.get("keyword")), true, Long.parseLong(each.get("cooldown").toString()), new CustomPlaceholderHoverEvent((boolean) each.get("hoverEnabled"), (String) each.get("hoverText")), new CustomPlaceholderClickEvent((boolean) each.get("clickEnabled"), ClickEventAction.valueOf((String) each.get("clickAction")), (String) each.get("clickValue")), new CustomPlaceholderReplaceText((boolean) each.get("replaceEnabled"), (String) each.get("replaceText")), name, ""));
+            specialPlaceholders.add(new CustomPlaceholder(
+                    name,
+                    ParsePlayer.valueOf((String) each.get("parseplayer")),
+                    Pattern.compile((String) each.get("keyword")),
+                    true,
+                    Long.parseLong(each.get("cooldown").toString()),
+                    new CustomPlaceholderHoverEvent((boolean) each.get("hoverEnabled"), (String) each.get("hoverText")),
+                    new CustomPlaceholderClickEvent((boolean) each.get("clickEnabled"),
+                            ClickEventAction.valueOf((String) each.get("clickAction")),
+                            (String) each.get("clickValue")
+                    ),
+                    new CustomPlaceholderReplaceText(
+                            (boolean) each.get("replaceEnabled"),
+                            (String) each.get("replaceText")
+                    ),
+                    name,
+                    ""
+            ));
         }
 
         this.specialPlaceholders = specialPlaceholders;

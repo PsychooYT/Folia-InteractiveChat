@@ -29,6 +29,7 @@ import com.loohp.interactivechat.objectholders.ValuePairs;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ public class PlaceholderParser {
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("[%]([^%]+)[%]");
 
     static {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             if (InteractiveChat.bungeecordMode) {
                 if (InteractiveChat.useTooltipOnTab) {
                     for (Player player : Bukkit.getOnlinePlayers()) {
@@ -62,7 +63,8 @@ public class PlaceholderParser {
         if (InteractiveChat.parsePAPIOnMainThread && !Bukkit.isPrimaryThread()) {
             try {
                 CompletableFuture<String> future = new CompletableFuture<>();
-                Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> future.complete(parse0(offlineICPlayer, str)));
+                FoliaUtil.scheduler
+                      .runTask(() -> future.complete(parse0(offlineICPlayer, str)));
                 return future.get(1500, TimeUnit.MILLISECONDS);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -92,11 +94,18 @@ public class PlaceholderParser {
             if (player.isLocal()) {
                 if (InteractiveChat.bungeecordMode) {
                     List<ValuePairs<String, String>> pairs = new ArrayList<>();
-                    for (Entry<String, String> entry : getAllPlaceholdersContained(player.getLocalPlayer(), str).entrySet()) {
+                    for (Entry<String, String> entry : getAllPlaceholdersContained(
+                            player.getLocalPlayer(),
+                            str
+                    ).entrySet()) {
                         pairs.add(new ValuePairs<>(entry.getKey(), entry.getValue()));
                     }
                     try {
-                        BungeeMessageSender.forwardPlaceholders(System.currentTimeMillis(), player.getUniqueId(), pairs);
+                        BungeeMessageSender.forwardPlaceholders(
+                                System.currentTimeMillis(),
+                                player.getUniqueId(),
+                                pairs
+                        );
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

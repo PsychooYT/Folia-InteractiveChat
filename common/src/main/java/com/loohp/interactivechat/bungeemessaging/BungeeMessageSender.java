@@ -38,16 +38,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
@@ -61,7 +56,7 @@ public class BungeeMessageSender {
     protected static short inventoryScheme = 0;
 
     static {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             int size = sent.size();
             for (int i = size; i > 500; i--) {
                 sent.remove(sent.firstKey());
@@ -264,7 +259,11 @@ public class BungeeMessageSender {
 
                 CustomPlaceholderClickEvent click = customPlaceholder.getClick();
                 out.writeBoolean(click.isEnabled());
-                DataTypeIO.writeString(out, click.getAction() == null ? "" : click.getAction().name(), StandardCharsets.UTF_8);
+                DataTypeIO.writeString(
+                        out,
+                        click.getAction() == null ? "" : click.getAction().name(),
+                        StandardCharsets.UTF_8
+                );
                 DataTypeIO.writeString(out, click.getValue(), StandardCharsets.UTF_8);
 
                 CustomPlaceholderReplaceText replace = customPlaceholder.getReplace();

@@ -44,6 +44,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,9 +68,12 @@ public class InventoryEvents implements Listener {
         if (hash != null) {
             Inventory fakeInv = InteractiveChat.inventoryDisplay1Lower.get(hash);
             if (fakeInv == null) {
-                Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> player.closeInventory());
+                FoliaUtil.scheduler.runTask(player, () -> player.closeInventory());
             } else {
-                Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> InventoryUtils.sendFakePlayerInventory(player, fakeInv, true, false));
+                FoliaUtil.scheduler.runTask(
+                        player,
+                        () -> InventoryUtils.sendFakePlayerInventory(player, fakeInv, true, false)
+                );
             }
         }
         if (event.getView().getTopInventory() == null) {
@@ -80,7 +84,8 @@ public class InventoryEvents implements Listener {
             event.setCancelled(true);
             CANCELLED_INVENTORY.add(event);
         }
-        if (InteractiveChat.containerDisplay.containsKey(topInventory) || InteractiveChat.upperSharedInventory.contains(topInventory)) {
+        if (InteractiveChat.containerDisplay.containsKey(topInventory) || InteractiveChat.upperSharedInventory.contains(
+                topInventory)) {
             if (event.getRawSlot() < event.getView().getTopInventory().getSize()) {
                 ItemStack item = event.getCurrentItem();
                 inventoryAction(item, player, topInventory);
@@ -138,7 +143,11 @@ public class InventoryEvents implements Listener {
                 if (bsm instanceof InventoryHolder) {
                     Inventory container = ((InventoryHolder) bsm).getInventory();
                     if ((container.getSize() % 9) == 0) {
-                        Inventory displayInventory = Bukkit.createInventory(ICInventoryHolder.INSTANCE, container.getSize() + 9, InteractiveChat.containerViewTitle);
+                        Inventory displayInventory = Bukkit.createInventory(
+                                ICInventoryHolder.INSTANCE,
+                                container.getSize() + 9,
+                                InteractiveChat.containerViewTitle
+                        );
                         ItemStack empty = InteractiveChat.itemFrame1.clone();
                         if (item.getType().equals(InteractiveChat.itemFrame1.getType())) {
                             empty = InteractiveChat.itemFrame2.clone();
@@ -157,7 +166,7 @@ public class InventoryEvents implements Listener {
                             displayInventory.setItem(i + 9, containerItem == null ? null : containerItem.clone());
                         }
 
-                        Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+                        FoliaUtil.scheduler.runTaskLater(player, () -> {
                             ValuePairs<Inventory, String> opened;
                             String hash = InteractiveChat.viewingInv1.remove(player.getUniqueId());
                             if (hash != null) {
@@ -179,7 +188,12 @@ public class InventoryEvents implements Listener {
     public void onInventoryClickHighest(InventoryClickEvent event) {
         if (CANCELLED_INVENTORY.remove(event)) {
             event.setCancelled(true);
-            Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> ((Player) event.getWhoClicked()).updateInventory(), 5);
+            FoliaUtil.scheduler
+                    .runTaskLater(
+                            ((event).getWhoClicked()),
+                            () -> ((Player) event.getWhoClicked()).updateInventory(),
+                            5
+                    );
         }
     }
 
@@ -193,7 +207,7 @@ public class InventoryEvents implements Listener {
         if (topInventory != null) {
             ValuePairs<Inventory, String> opened = InteractiveChat.containerDisplay.remove(topInventory);
             if (opened != null) {
-                Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+                FoliaUtil.scheduler.runTaskLater(player, () -> {
                     player.openInventory(opened.getFirst());
                     String hash = opened.getSecond();
                     if (hash != null) {

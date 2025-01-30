@@ -29,13 +29,10 @@ import com.loohp.interactivechat.utils.CustomStringUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.UUID;
 
 public class SenderFinder {
 
@@ -51,7 +48,7 @@ public class SenderFinder {
             String msg = entry.getKey();
             if (chat.contains(msg)) {
                 UUID uuid = entry.getValue();
-                Bukkit.getScheduler().runTaskLaterAsynchronously(InteractiveChat.plugin, () -> InteractiveChat.messages.remove(msg), 5);
+                FoliaUtil.scheduler.runTaskLaterAsynchronously(() -> InteractiveChat.messages.remove(msg), 5);
                 ICPlayer wplayer = ICPlayerFactory.getICPlayer(uuid);
                 if (wplayer != null) {
                     return Optional.of(wplayer);
@@ -73,7 +70,11 @@ public class SenderFinder {
         if (mostsimular != null) {
             UUID uuid = InteractiveChat.messages.get(mostsimular);
             String finalmostsimular = mostsimular;
-            Bukkit.getScheduler().runTaskLaterAsynchronously(InteractiveChat.plugin, () -> InteractiveChat.messages.remove(finalmostsimular), 5);
+            FoliaUtil.scheduler
+                    .runTaskLaterAsynchronously(
+                            () -> InteractiveChat.messages.remove(finalmostsimular),
+                            5
+                    );
             ICPlayer wplayer = ICPlayerFactory.getICPlayer(uuid);
             if (wplayer != null) {
                 return Optional.of(wplayer);

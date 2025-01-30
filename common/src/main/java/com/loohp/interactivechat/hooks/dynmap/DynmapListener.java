@@ -31,6 +31,7 @@ import org.dynmap.bukkit.DynmapPlugin;
 import org.dynmap.common.DynmapListenerManager;
 import org.dynmap.common.DynmapListenerManager.EventListener;
 import org.dynmap.common.DynmapListenerManager.EventType;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -52,7 +53,8 @@ public class DynmapListener implements Listener {
             DynmapListenerManager dynmapEvents = dynmapCore.listenerManager;
             Field listenerField = dynmapEvents.getClass().getDeclaredField("listeners");
             listenerField.setAccessible(true);
-            Map<EventType, ArrayList<EventListener>> listeners = (Map<EventType, ArrayList<EventListener>>) listenerField.get(dynmapEvents);
+            Map<EventType, ArrayList<EventListener>> listeners = (Map<EventType, ArrayList<EventListener>>) listenerField.get(
+                    dynmapEvents);
             listenerField.setAccessible(false);
             listeners.remove(EventType.PLAYER_CHAT);
             dynmapEvents.addListener(EventType.PLAYER_CHAT, new DynmapCoreChatListener(dynmapCore));
@@ -66,9 +68,11 @@ public class DynmapListener implements Listener {
     public void onPluginEnable(PluginEnableEvent event) {
         if (init) {
             if (event.getPlugin().getName().equalsIgnoreCase("dynmap")) {
-                Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+                FoliaUtil.scheduler.runTaskLater(() -> {
                     _init_();
-                    Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.LIGHT_PURPLE + "[InteractiveChat] InteractiveChat has injected into Dynmap!");
+                    Bukkit.getServer()
+                          .getConsoleSender()
+                          .sendMessage(ChatColor.LIGHT_PURPLE + "[InteractiveChat] InteractiveChat has injected into Dynmap!");
                 }, 100);
             }
         }

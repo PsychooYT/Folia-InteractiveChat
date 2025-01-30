@@ -31,6 +31,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +61,7 @@ public class ModernChatCompletionTask implements Listener {
     }
 
     private void run() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             if (InteractiveChat.chatTabCompletionsEnabled) {
                 for (Player tabCompleter : Bukkit.getOnlinePlayers()) {
                     Set<String> tab = ConcurrentHashMap.newKeySet();
@@ -86,12 +87,20 @@ public class ModernChatCompletionTask implements Listener {
                     List<String> remove = new ArrayList<>(Sets.difference(oldList, tab));
 
                     if (!add.isEmpty()) {
-                        PacketContainer chatCompletionPacket1 = NMS.getInstance().createCustomTabCompletionPacket(CustomTabCompletionAction.ADD, add);
+                        PacketContainer chatCompletionPacket1 = NMS.getInstance()
+                                                                   .createCustomTabCompletionPacket(
+                                                                           CustomTabCompletionAction.ADD,
+                                                                           add
+                                                                   );
                         InteractiveChat.protocolManager.sendServerPacket(tabCompleter, chatCompletionPacket1);
                     }
 
                     if (!remove.isEmpty()) {
-                        PacketContainer chatCompletionPacket2 = NMS.getInstance().createCustomTabCompletionPacket(CustomTabCompletionAction.REMOVE, remove);
+                        PacketContainer chatCompletionPacket2 = NMS.getInstance()
+                                                                   .createCustomTabCompletionPacket(
+                                                                           CustomTabCompletionAction.REMOVE,
+                                                                           remove
+                                                                   );
                         InteractiveChat.protocolManager.sendServerPacket(tabCompleter, chatCompletionPacket2);
                     }
 

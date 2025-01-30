@@ -32,12 +32,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EssentialsNicknames implements Listener {
@@ -60,7 +57,7 @@ public class EssentialsNicknames implements Listener {
             }
         });
 
-        Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskLater(() -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 loadNicks(player);
             }
@@ -68,7 +65,9 @@ public class EssentialsNicknames implements Listener {
     }
 
     public static void loadNicks(Player player) {
-        if (essen.getUser(player.getUniqueId()).getNickname() != null && !essen.getUser(player.getUniqueId()).getNickname().equals("")) {
+        if (essen.getUser(player.getUniqueId()).getNickname() != null && !essen.getUser(player.getUniqueId())
+                                                                               .getNickname()
+                                                                               .equals("")) {
             String essentialsNick = essen.getUser(player.getUniqueId()).getNickname();
             List<String> names = new ArrayList<>();
             names.add(prefix + essentialsNick);
@@ -80,7 +79,7 @@ public class EssentialsNicknames implements Listener {
     public void onEssentialsReload(PlayerCommandPreprocessEvent event) {
         if (event.getMessage().equalsIgnoreCase("/essentials reload")) {
             if (event.getPlayer().hasPermission("essentials.essentials")) {
-                Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+                FoliaUtil.scheduler.runTaskLater(() -> {
                     prefix = essen.getConfig().getString("nickname-prefix");
                 }, 40);
             }
@@ -100,7 +99,7 @@ public class EssentialsNicknames implements Listener {
     @EventHandler
     public void onEssentialsJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskLater(() -> {
             loadNicks(player);
         }, 100);
     }

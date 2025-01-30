@@ -26,6 +26,8 @@ softdepend:
 depend: [ProtocolLib, PlaceholderAPI, Vault]
 prefix: InteractiveChat
 
+folia-supported: true
+
 commands:
   interactivechat:
     usage: /<command>

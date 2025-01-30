@@ -30,12 +30,9 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class EcoHook {
 
@@ -70,7 +67,7 @@ public class EcoHook {
         if (!InteractiveChat.ecoSetLoreOnMainThread || Bukkit.isPrimaryThread()) {
             return CompletableFuture.completedFuture(setEcoLore0(itemStack.clone(), player));
         } else {
-            return Bukkit.getScheduler().callSyncMethod(InteractiveChat.plugin, () -> setEcoLore0(itemStack.clone(), player));
+            return FoliaUtil.scheduler.callSyncMethod(() -> setEcoLore0(itemStack.clone(), player));
         }
     }
 

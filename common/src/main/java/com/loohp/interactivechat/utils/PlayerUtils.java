@@ -33,23 +33,20 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class PlayerUtils implements Listener {
 
     private static final Map<UUID, Map<String, PermissionCache>> PERMISSION_CACHE = new ConcurrentHashMap<>();
 
     static {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             long now = System.currentTimeMillis();
             Iterator<Entry<UUID, Map<String, PermissionCache>>> itr0 = PERMISSION_CACHE.entrySet().iterator();
             while (itr0.hasNext()) {
@@ -102,14 +99,20 @@ public class PlayerUtils implements Listener {
             return result;
         } else {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
-            Bukkit.getScheduler().runTaskAsynchronously(InteractiveChat.plugin, () -> {
+            FoliaUtil.scheduler.runTaskAsynchronously(() -> {
                 Map<String, PermissionCache> map = PERMISSION_CACHE.get(uuid);
                 if (map == null) {
                     PERMISSION_CACHE.putIfAbsent(uuid, new ConcurrentHashMap<>());
                     map = PERMISSION_CACHE.get(uuid);
                 }
                 PermissionCache cachedResult = map.get(permission);
-                boolean result = cachedResult != null ? cachedResult.getValue() : InteractiveChat.perms.playerHas(Bukkit.getWorlds().get(0).getName(), Bukkit.getOfflinePlayer(uuid), permission);
+                boolean result = cachedResult != null ?
+                                 cachedResult.getValue() :
+                                 InteractiveChat.perms.playerHas(
+                                         Bukkit.getWorlds().get(0).getName(),
+                                         Bukkit.getOfflinePlayer(uuid),
+                                         permission
+                                 );
                 future.complete(result);
                 if (cachedResult == null) {
                     map.put(permission, new PermissionCache(result, System.currentTimeMillis()));

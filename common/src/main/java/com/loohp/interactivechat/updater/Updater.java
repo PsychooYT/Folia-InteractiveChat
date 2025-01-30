@@ -35,6 +35,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.json.simple.JSONObject;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 public class Updater implements Listener {
 
@@ -50,13 +51,15 @@ public class Updater implements Listener {
                 Player player = (Player) sender;
                 if (!devbuild) {
                     player.sendMessage(ChatColor.YELLOW + "[InteractiveChat] A new version is available on SpigotMC: " + version);
-                    Component url = LegacyComponentSerializer.legacySection().deserialize(ChatColor.GOLD + "https://www.spigotmc.org/resources/" + spigotPluginId);
+                    Component url = LegacyComponentSerializer.legacySection()
+                                                             .deserialize(ChatColor.GOLD + "https://www.spigotmc.org/resources/" + spigotPluginId);
                     url = url.hoverEvent(HoverEvent.showText(Component.text("Click me!").color(NamedTextColor.AQUA)));
                     url = url.clickEvent(ClickEvent.openUrl("https://www.spigotmc.org/resources/" + spigotPluginId));
                     InteractiveChat.sendMessage(player, url);
                 } else {
                     sender.sendMessage(ChatColor.GREEN + "[InteractiveChat] You are running the latest release!");
-                    Component url = LegacyComponentSerializer.legacySection().deserialize(ChatColor.YELLOW + "[InteractiveChat] However, a new Development Build is available if you want to try that!");
+                    Component url = LegacyComponentSerializer.legacySection()
+                                                             .deserialize(ChatColor.YELLOW + "[InteractiveChat] However, a new Development Build is available if you want to try that!");
                     url = url.hoverEvent(HoverEvent.showText(Component.text("Click me!").color(NamedTextColor.AQUA)));
                     url = url.clickEvent(ClickEvent.openUrl("https://ci.loohpjames.com/job/" + PLUGIN_NAME));
                     InteractiveChat.sendMessage(player, url);
@@ -76,29 +79,41 @@ public class Updater implements Listener {
     public static UpdaterResponse checkUpdate() {
         try {
             String localPluginVersion = InteractiveChat.plugin.getDescription().getVersion();
-            JSONObject response = (JSONObject) HTTPRequestUtils.getJSONResponse("https://api.loohpjames.com/spigot/data").get(PLUGIN_NAME);
+            JSONObject response = (JSONObject) HTTPRequestUtils.getJSONResponse("https://api.loohpjames.com/spigot/data")
+                                                               .get(PLUGIN_NAME);
             String spigotPluginVersion = (String) ((JSONObject) response.get("latestversion")).get("release");
             String devBuildVersion = (String) ((JSONObject) response.get("latestversion")).get("devbuild");
             int spigotPluginId = (int) (long) ((JSONObject) response.get("spigotmc")).get("pluginid");
-            int posOfThirdDot = localPluginVersion.indexOf(".", localPluginVersion.indexOf(".", localPluginVersion.indexOf(".") + 1) + 1);
+            int posOfThirdDot = localPluginVersion.indexOf(
+                    ".",
+                    localPluginVersion.indexOf(".", localPluginVersion.indexOf(".") + 1) + 1
+            );
             Version currentDevBuild = new Version(localPluginVersion);
-            Version currentRelease = new Version(localPluginVersion.substring(0, posOfThirdDot >= 0 ? posOfThirdDot : localPluginVersion.length()));
+            Version currentRelease = new Version(localPluginVersion.substring(
+                    0,
+                    posOfThirdDot >= 0 ? posOfThirdDot : localPluginVersion.length()
+            ));
             Version spigotmc = new Version(spigotPluginVersion);
             Version devBuild = new Version(devBuildVersion);
             if (currentRelease.compareTo(spigotmc) < 0) {
-                return new UpdaterResponse(spigotPluginVersion, spigotPluginId, currentDevBuild.compareTo(devBuild) >= 0);
+                return new UpdaterResponse(
+                        spigotPluginVersion,
+                        spigotPluginId,
+                        currentDevBuild.compareTo(devBuild) >= 0
+                );
             } else {
                 return new UpdaterResponse("latest", spigotPluginId, currentDevBuild.compareTo(devBuild) >= 0);
             }
         } catch (Exception e) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Failed to check against \"api.loohpjames.com\" for the latest version.. It could be an internet issue or \"api.loohpjames.com\" is down. If you want disable the update checker, you can disable in config.yml, but we still highly-recommend you to keep your plugin up to date!");
+            Bukkit.getConsoleSender()
+                  .sendMessage(ChatColor.RED + "[InteractiveChat] Failed to check against \"api.loohpjames.com\" for the latest version.. It could be an internet issue or \"api.loohpjames.com\" is down. If you want disable the update checker, you can disable in config.yml, but we still highly-recommend you to keep your plugin up to date!");
         }
         return new UpdaterResponse("error", -1, false);
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTaskLaterAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskLaterAsynchronously(() -> {
             if (InteractiveChat.updaterEnabled) {
                 Player player = event.getPlayer();
                 if (player.hasPermission("interactivechat.update")) {

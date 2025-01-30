@@ -40,14 +40,9 @@ import org.bukkit.plugin.Plugin;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -72,7 +67,7 @@ public class LanguageUtils {
     @SuppressWarnings("unchecked")
     public static void loadTranslations(String language) {
         Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[InteractiveChat] Loading languages...");
-        Bukkit.getScheduler().runTaskAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskAsynchronously(() -> {
             while (lock.get()) {
                 try {
                     TimeUnit.MILLISECONDS.sleep(1);
@@ -93,26 +88,48 @@ public class LanguageUtils {
                     pw.flush();
                     pw.close();
                 }
-                InputStreamReader hashStream = new InputStreamReader(new FileInputStream(hashFile), StandardCharsets.UTF_8);
+                InputStreamReader hashStream = new InputStreamReader(
+                        new FileInputStream(hashFile),
+                        StandardCharsets.UTF_8
+                );
                 JSONObject data = (JSONObject) new JSONParser().parse(hashStream);
                 hashStream.close();
 
                 try {
                     JSONObject manifest = HTTPRequestUtils.getJSONResponse(VERSION_MANIFEST_URL);
                     if (manifest == null) {
-                        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to fetch version_manifest from " + VERSION_MANIFEST_URL);
+                        Bukkit.getConsoleSender()
+                              .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to fetch version_manifest from " + VERSION_MANIFEST_URL);
                     } else {
                         String mcVersion = InteractiveChat.exactMinecraftVersion;
-                        Object urlObj = ((JSONArray) manifest.get("versions")).stream().filter(each -> ((JSONObject) each).get("id").toString().equalsIgnoreCase(mcVersion)).map(each -> ((JSONObject) each).get("url").toString()).findFirst().orElse(null);
+                        Object urlObj = ((JSONArray) manifest.get("versions")).stream()
+                                                                              .filter(each -> ((JSONObject) each).get(
+                                                                                                                         "id")
+                                                                                                                 .toString()
+                                                                                                                 .equalsIgnoreCase(
+                                                                                                                         mcVersion))
+                                                                              .map(each -> ((JSONObject) each).get("url")
+                                                                                                              .toString())
+                                                                              .findFirst()
+                                                                              .orElse(null);
                         if (urlObj == null) {
-                            Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to find " + mcVersion + " from version_manifest");
+                            Bukkit.getConsoleSender()
+                                  .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to find " + mcVersion + " from version_manifest");
                         } else {
                             JSONObject versionData = HTTPRequestUtils.getJSONResponse(urlObj.toString());
                             if (versionData == null) {
-                                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to fetch version data from " + urlObj);
+                                Bukkit.getConsoleSender()
+                                      .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to fetch version data from " + urlObj);
                             } else {
-                                String clientUrl = ((JSONObject) ((JSONObject) versionData.get("downloads")).get("client")).get("url").toString();
-                                try (ZipArchiveInputStream zip = new ZipArchiveInputStream(new ByteArrayInputStream(HTTPRequestUtils.download(clientUrl)), StandardCharsets.UTF_8.toString(), false, true, true)) {
+                                String clientUrl = ((JSONObject) ((JSONObject) versionData.get("downloads")).get(
+                                        "client")).get("url").toString();
+                                try (ZipArchiveInputStream zip = new ZipArchiveInputStream(
+                                        new ByteArrayInputStream(HTTPRequestUtils.download(clientUrl)),
+                                        StandardCharsets.UTF_8.toString(),
+                                        false,
+                                        true,
+                                        true
+                                )) {
                                     while (true) {
                                         ZipArchiveEntry entry = zip.getNextZipEntry();
                                         if (entry == null) {
@@ -128,12 +145,18 @@ public class LanguageUtils {
 
                                         String name = entry.getName().toLowerCase();
                                         if (name.matches("^.*assets/minecraft/lang/en_us.(json|lang)$")) {
-                                            String enUsFileHash = HashUtils.createSha1String(new ByteArrayInputStream(currentEntry));
+                                            String enUsFileHash = HashUtils.createSha1String(new ByteArrayInputStream(
+                                                    currentEntry));
                                             String enUsExtension = name.substring(name.indexOf(".") + 1);
                                             if (data.containsKey("en_us")) {
                                                 JSONObject values = (JSONObject) data.get("en_us");
-                                                File fileToSave = new File(langFileFolder, "en_us" + "." + enUsExtension);
-                                                if (!values.get("hash").toString().equals(enUsFileHash) || !fileToSave.exists()) {
+                                                File fileToSave = new File(
+                                                        langFileFolder,
+                                                        "en_us" + "." + enUsExtension
+                                                );
+                                                if (!values.get("hash")
+                                                           .toString()
+                                                           .equals(enUsFileHash) || !fileToSave.exists()) {
                                                     values.put("hash", enUsFileHash);
                                                     if (fileToSave.exists()) {
                                                         fileToSave.delete();
@@ -143,7 +166,10 @@ public class LanguageUtils {
                                             } else {
                                                 JSONObject values = new JSONObject();
                                                 values.put("hash", enUsFileHash);
-                                                File fileToSave = new File(langFileFolder, "en_us" + "." + enUsExtension);
+                                                File fileToSave = new File(
+                                                        langFileFolder,
+                                                        "en_us" + "." + enUsExtension
+                                                );
                                                 if (fileToSave.exists()) {
                                                     fileToSave.delete();
                                                 }
@@ -161,7 +187,8 @@ public class LanguageUtils {
                                 String indexUrl = ((JSONObject) versionData.get("assetIndex")).get("url").toString();
                                 JSONObject assets = HTTPRequestUtils.getJSONResponse(indexUrl);
                                 if (assets == null) {
-                                    Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to fetch assets data from " + indexUrl);
+                                    Bukkit.getConsoleSender()
+                                          .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to fetch assets data from " + indexUrl);
                                 } else {
                                     JSONObject objects = (JSONObject) assets.get("objects");
                                     for (Object obj : objects.keySet()) {
@@ -169,18 +196,22 @@ public class LanguageUtils {
                                         if (key.matches("^minecraft\\/lang\\/" + language + ".(json|lang)$")) {
                                             String lang = key.substring(key.lastIndexOf("/") + 1, key.indexOf("."));
                                             String extension = key.substring(key.indexOf(".") + 1);
-                                            String hash = ((JSONObject) objects.get(obj.toString())).get("hash").toString();
+                                            String hash = ((JSONObject) objects.get(obj.toString())).get("hash")
+                                                                                                    .toString();
                                             String fileUrl = RESOURCES_URL + hash.substring(0, 2) + "/" + hash;
                                             if (data.containsKey(lang)) {
                                                 JSONObject values = (JSONObject) data.get(lang);
                                                 File fileToSave = new File(langFileFolder, lang + "." + extension);
-                                                if (!values.get("hash").toString().equals(hash) || !fileToSave.exists()) {
+                                                if (!values.get("hash")
+                                                           .toString()
+                                                           .equals(hash) || !fileToSave.exists()) {
                                                     values.put("hash", hash);
                                                     if (fileToSave.exists()) {
                                                         fileToSave.delete();
                                                     }
                                                     if (!HTTPRequestUtils.download(fileToSave, fileUrl)) {
-                                                        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to download " + key + " from " + fileUrl);
+                                                        Bukkit.getConsoleSender()
+                                                              .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to download " + key + " from " + fileUrl);
                                                     }
                                                 }
                                             } else {
@@ -191,7 +222,8 @@ public class LanguageUtils {
                                                     fileToSave.delete();
                                                 }
                                                 if (!HTTPRequestUtils.download(fileToSave, fileUrl)) {
-                                                    Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to download " + key + " from " + fileUrl);
+                                                    Bukkit.getConsoleSender()
+                                                          .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to download " + key + " from " + fileUrl);
                                                 }
                                                 data.put(lang, values);
                                             }
@@ -203,7 +235,8 @@ public class LanguageUtils {
                     }
                     JsonUtils.saveToFilePretty(data, hashFile);
                 } catch (Exception e) {
-                    Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to download latest languages files from Mojang");
+                    Bukkit.getConsoleSender()
+                          .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to download latest languages files from Mojang");
                     e.printStackTrace();
                 }
 
@@ -212,7 +245,10 @@ public class LanguageUtils {
                 for (File file : langFileFolder.listFiles()) {
                     try {
                         if (file.getName().matches("^" + langRegex + ".json$")) {
-                            InputStreamReader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+                            InputStreamReader reader = new InputStreamReader(
+                                    new FileInputStream(file),
+                                    StandardCharsets.UTF_8
+                            );
                             JSONObject json = (JSONObject) new JSONParser().parse(reader);
                             reader.close();
                             Map<String, String> mapping = new HashMap<>();
@@ -225,18 +261,25 @@ public class LanguageUtils {
                             }
                             translations.put(file.getName().substring(0, file.getName().lastIndexOf(".")), mapping);
                         } else if (file.getName().matches("^" + langRegex + ".lang$")) {
-                            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+                            BufferedReader br = new BufferedReader(new InputStreamReader(
+                                    new FileInputStream(file),
+                                    StandardCharsets.UTF_8
+                            ));
                             Map<String, String> mapping = new HashMap<>();
                             br.lines().forEach(line -> {
                                 if (line.contains("=")) {
-                                    mapping.put(line.substring(0, line.indexOf("=")), line.substring(line.indexOf("=") + 1));
+                                    mapping.put(
+                                            line.substring(0, line.indexOf("=")),
+                                            line.substring(line.indexOf("=") + 1)
+                                    );
                                 }
                             });
                             br.close();
                             translations.put(file.getName().substring(0, file.getName().lastIndexOf(".")), mapping);
                         }
                     } catch (Exception e) {
-                        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to load " + file.getName());
+                        Bukkit.getConsoleSender()
+                              .sendMessage(ChatColor.RED + "[InteractiveChat] Unable to load " + file.getName());
                         e.printStackTrace();
                     }
                 }
@@ -255,7 +298,8 @@ public class LanguageUtils {
                         }
                     }
                 }
-                Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[InteractiveChat] Loaded all " + translations.size() + " languages!");
+                Bukkit.getConsoleSender()
+                      .sendMessage(ChatColor.GREEN + "[InteractiveChat] Loaded all " + translations.size() + " languages!");
             } catch (Exception e) {
                 Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] Unable to setup languages");
                 e.printStackTrace();
@@ -303,7 +347,8 @@ public class LanguageUtils {
         Material material = itemStack.getType();
         String path = NMS.getInstance().getItemStackTranslationKey(itemStack);
 
-        if (material.equals(Material.POTION) || material.equals(Material.SPLASH_POTION) || material.equals(Material.LINGERING_POTION) || material.equals(Material.TIPPED_ARROW)) {
+        if (material.equals(Material.POTION) || material.equals(Material.SPLASH_POTION) || material.equals(Material.LINGERING_POTION) || material.equals(
+                Material.TIPPED_ARROW)) {
             PotionMeta meta = (PotionMeta) itemStack.getItemMeta();
             String namespace = PotionUtils.getVanillaPotionName(meta.getBasePotionData().getType());
             path += ".effect." + namespace;
@@ -392,7 +437,10 @@ public class LanguageUtils {
             } else if (mapping == null) {
                 return getTranslation(translationKey, "en_us");
             } else {
-                String result = mapping.getOrDefault(translationKey, getTranslation(translationKey, "en_us").getResult());
+                String result = mapping.getOrDefault(
+                        translationKey,
+                        getTranslation(translationKey, "en_us").getResult()
+                );
                 boolean hasTranslation = mapping.containsKey(translationKey);
                 return new TranslationResult(result, hasTranslation);
             }

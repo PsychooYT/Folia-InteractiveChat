@@ -30,42 +30,18 @@ import com.loohp.interactivechat.api.InteractiveChatAPI.SharedType;
 import com.loohp.interactivechat.api.events.ProxyCustomDataRecievedEvent;
 import com.loohp.interactivechat.data.PlayerDataManager.PlayerData;
 import com.loohp.interactivechat.modules.ProcessExternalMessage;
-import com.loohp.interactivechat.objectholders.BuiltInPlaceholder;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.ClickEventAction;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.CustomPlaceholderClickEvent;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.CustomPlaceholderHoverEvent;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.CustomPlaceholderReplaceText;
-import com.loohp.interactivechat.objectholders.CustomPlaceholder.ParsePlayer;
-import com.loohp.interactivechat.objectholders.ICInventoryHolder;
-import com.loohp.interactivechat.objectholders.ICPlaceholder;
-import com.loohp.interactivechat.objectholders.ICPlayer;
-import com.loohp.interactivechat.objectholders.ICPlayerFactory;
-import com.loohp.interactivechat.objectholders.MentionPair;
-import com.loohp.interactivechat.objectholders.SignedMessageModificationData;
-import com.loohp.interactivechat.objectholders.ValueTrios;
-import com.loohp.interactivechat.utils.CustomArrayUtils;
-import com.loohp.interactivechat.utils.DataTypeIO;
-import com.loohp.interactivechat.utils.InventoryUtils;
-import com.loohp.interactivechat.utils.PlaceholderParser;
-import com.loohp.interactivechat.utils.PlayerUtils;
+import com.loohp.interactivechat.objectholders.*;
+import com.loohp.interactivechat.objectholders.CustomPlaceholder.*;
+import com.loohp.interactivechat.utils.*;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.messaging.PluginMessageListener;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -82,13 +58,15 @@ public class BungeeMessageListener implements PluginMessageListener {
 
     public BungeeMessageListener(InteractiveChat instance) {
         plugin = instance;
-        Cache<Integer, byte[][]> incomingCache = CacheBuilder.newBuilder().expireAfterAccess(10, TimeUnit.SECONDS).build();
+        Cache<Integer, byte[][]> incomingCache = CacheBuilder.newBuilder()
+                                                             .expireAfterAccess(10, TimeUnit.SECONDS)
+                                                             .build();
         incoming = incomingCache.asMap();
     }
 
     public void addToComplete(UUID uuid, CompletableFuture<?> future) {
         toComplete.put(uuid, future);
-        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+        FoliaUtil.scheduler.runTaskLaterAsynchronously(() -> {
             CompletableFuture<?> f = toComplete.remove(uuid);
             if (f != null && !f.isDone() && !f.isCompletedExceptionally() && !f.isCancelled()) {
                 f.completeExceptionally(new TimeoutException("The proxy did not respond in time"));
@@ -103,7 +81,7 @@ public class BungeeMessageListener implements PluginMessageListener {
             return;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskAsynchronously(() -> {
             try {
                 ByteArrayDataInput in = ByteStreams.newDataInput(bytes);
 
@@ -138,14 +116,18 @@ public class BungeeMessageListener implements PluginMessageListener {
                 }
 
                 if (InteractiveChat.pluginMessagePacketVerbose) {
-                    Bukkit.getConsoleSender().sendMessage("IC Inbound - ID " + packetId + " via " + pluginMessagingPlayer.getName());
+                    Bukkit.getConsoleSender()
+                          .sendMessage("IC Inbound - ID " + packetId + " via " + pluginMessagingPlayer.getName());
                 }
                 ByteArrayDataInput input = ByteStreams.newDataInput(data);
 
                 switch (packetId) {
                     case 0x00:
                         int playerAmount = input.readInt();
-                        Set<UUID> localUUID = Bukkit.getOnlinePlayers().stream().map(each -> each.getUniqueId()).collect(Collectors.toSet());
+                        Set<UUID> localUUID = Bukkit.getOnlinePlayers()
+                                                    .stream()
+                                                    .map(each -> each.getUniqueId())
+                                                    .collect(Collectors.toSet());
                         Set<UUID> current = new HashSet<>(ICPlayerFactory.getRemoteUUIDs());
                         Set<UUID> newSet = new HashSet<>();
                         for (int i = 0; i < playerAmount; i++) {
@@ -159,7 +141,20 @@ public class BungeeMessageListener implements PluginMessageListener {
                                 }
                             }
                             if (!localUUID.contains(uuid) && !ICPlayerFactory.getRemoteUUIDs().contains(uuid)) {
-                                ICPlayerFactory.createOrUpdateRemoteICPlayer(server, name, uuid, true, 0, 0, Bukkit.createInventory(ICInventoryHolder.INSTANCE, 45), Bukkit.createInventory(ICInventoryHolder.INSTANCE, InventoryUtils.getDefaultEnderChestSize()), false);
+                                ICPlayerFactory.createOrUpdateRemoteICPlayer(
+                                        server,
+                                        name,
+                                        uuid,
+                                        true,
+                                        0,
+                                        0,
+                                        Bukkit.createInventory(ICInventoryHolder.INSTANCE, 45),
+                                        Bukkit.createInventory(
+                                                ICInventoryHolder.INSTANCE,
+                                                InventoryUtils.getDefaultEnderChestSize()
+                                        ),
+                                        false
+                                );
                             }
                             newSet.add(uuid);
                         }
@@ -252,7 +247,8 @@ public class BungeeMessageListener implements PluginMessageListener {
                             break;
                         }
                         InteractiveChat.messages.put(message, uuid3);
-                        Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> InteractiveChat.messages.remove(message), 60);
+                        FoliaUtil.scheduler
+                              .runTaskLater( () -> InteractiveChat.messages.remove(message), 60);
                         break;
                     case 0x07:
                         int cooldownType = input.readByte();
@@ -260,15 +256,26 @@ public class BungeeMessageListener implements PluginMessageListener {
                             case 0:
                                 UUID uuid4 = DataTypeIO.readUUID(input);
                                 long time = input.readLong();
-                                InteractiveChat.placeholderCooldownManager.setPlayerUniversalLastTimestampRaw(uuid4, time);
+                                InteractiveChat.placeholderCooldownManager.setPlayerUniversalLastTimestampRaw(
+                                        uuid4,
+                                        time
+                                );
                                 break;
                             case 1:
                                 uuid4 = DataTypeIO.readUUID(input);
                                 UUID internalId = DataTypeIO.readUUID(input);
                                 time = input.readLong();
-                                Optional<ICPlaceholder> optPlaceholder = InteractiveChat.placeholderList.values().stream().filter(each -> each.getInternalId().equals(internalId)).findFirst();
+                                Optional<ICPlaceholder> optPlaceholder = InteractiveChat.placeholderList.values()
+                                                                                                        .stream()
+                                                                                                        .filter(each -> each.getInternalId()
+                                                                                                                            .equals(internalId))
+                                                                                                        .findFirst();
                                 if (optPlaceholder.isPresent()) {
-                                    InteractiveChat.placeholderCooldownManager.setPlayerPlaceholderLastTimestampRaw(uuid4, optPlaceholder.get(), time);
+                                    InteractiveChat.placeholderCooldownManager.setPlayerPlaceholderLastTimestampRaw(
+                                            uuid4,
+                                            optPlaceholder.get(),
+                                            time
+                                    );
                                 }
                                 break;
                         }
@@ -297,7 +304,13 @@ public class BungeeMessageListener implements PluginMessageListener {
                                 String description = DataTypeIO.readString(input, StandardCharsets.UTF_8);
                                 String permission = DataTypeIO.readString(input, StandardCharsets.UTF_8);
                                 long cooldown = input.readLong();
-                                list.add(new BuiltInPlaceholder(Pattern.compile(keyword), name, description, permission, cooldown));
+                                list.add(new BuiltInPlaceholder(
+                                        Pattern.compile(keyword),
+                                        name,
+                                        description,
+                                        permission,
+                                        cooldown
+                                ));
                             } else {
                                 String key = DataTypeIO.readString(input, StandardCharsets.UTF_8);
                                 ParsePlayer parseplayer = ParsePlayer.fromOrder(input.readByte());
@@ -314,20 +327,42 @@ public class BungeeMessageListener implements PluginMessageListener {
                                 String name = DataTypeIO.readString(input, StandardCharsets.UTF_8);
                                 String description = DataTypeIO.readString(input, StandardCharsets.UTF_8);
 
-                                list.add(new CustomPlaceholder(key, parseplayer, Pattern.compile(placeholder), parseKeyword, cooldown, new CustomPlaceholderHoverEvent(hoverEnabled, hoverText), new CustomPlaceholderClickEvent(clickEnabled, clickEnabled ? ClickEventAction.valueOf(clickAction) : null, clickValue), new CustomPlaceholderReplaceText(replaceEnabled, replaceText), name, description));
+                                list.add(new CustomPlaceholder(
+                                        key,
+                                        parseplayer,
+                                        Pattern.compile(placeholder),
+                                        parseKeyword,
+                                        cooldown,
+                                        new CustomPlaceholderHoverEvent(hoverEnabled, hoverText),
+                                        new CustomPlaceholderClickEvent(
+                                                clickEnabled,
+                                                clickEnabled ? ClickEventAction.valueOf(clickAction) : null,
+                                                clickValue
+                                        ),
+                                        new CustomPlaceholderReplaceText(replaceEnabled, replaceText),
+                                        name,
+                                        description
+                                ));
                             }
                         }
                         InteractiveChat.remotePlaceholderList.put(server, list);
                         break;
                     case 0x0A:
-                        BungeeMessageSender.resetAndForwardPlaceholderList(System.currentTimeMillis(), InteractiveChat.placeholderList.values());
+                        BungeeMessageSender.resetAndForwardPlaceholderList(
+                                System.currentTimeMillis(),
+                                InteractiveChat.placeholderList.values()
+                        );
                         break;
                     case 0x0B:
                         int id = input.readInt();
                         UUID playerUUID = DataTypeIO.readUUID(input);
                         String permission = DataTypeIO.readString(input, StandardCharsets.UTF_8);
                         Player player5 = Bukkit.getPlayer(playerUUID);
-                        BungeeMessageSender.permissionCheckResponse(System.currentTimeMillis(), id, player5 != null && player5.hasPermission(permission));
+                        BungeeMessageSender.permissionCheckResponse(
+                                System.currentTimeMillis(),
+                                id,
+                                player5 != null && player5.hasPermission(permission)
+                        );
                         break;
                     case 0x0D:
                         UUID playerUUID1 = DataTypeIO.readUUID(input);
@@ -350,10 +385,26 @@ public class BungeeMessageListener implements PluginMessageListener {
                             ICPlayer player7 = ICPlayerFactory.getICPlayer(player6);
                             switch (requestType) {
                                 case 0:
-                                    BungeeMessageSender.forwardInventory(System.currentTimeMillis(), player7.getUniqueId(), player7.isRightHanded(), player7.getSelectedSlot(), player7.getExperienceLevel(), null, player7.getInventory());
+                                    BungeeMessageSender.forwardInventory(
+                                            System.currentTimeMillis(),
+                                            player7.getUniqueId(),
+                                            player7.isRightHanded(),
+                                            player7.getSelectedSlot(),
+                                            player7.getExperienceLevel(),
+                                            null,
+                                            player7.getInventory()
+                                    );
                                     break;
                                 case 1:
-                                    BungeeMessageSender.forwardEnderchest(System.currentTimeMillis(), player7.getUniqueId(), player7.isRightHanded(), player7.getSelectedSlot(), player7.getExperienceLevel(), null, player7.getEnderChest());
+                                    BungeeMessageSender.forwardEnderchest(
+                                            System.currentTimeMillis(),
+                                            player7.getUniqueId(),
+                                            player7.isRightHanded(),
+                                            player7.getSelectedSlot(),
+                                            player7.getExperienceLevel(),
+                                            null,
+                                            player7.getEnderChest()
+                                    );
                                     break;
                             }
                         }
@@ -367,10 +418,15 @@ public class BungeeMessageListener implements PluginMessageListener {
                                 List<ValueTrios<UUID, String, Integer>> playerlist = new ArrayList<>();
                                 int playerListSize = input.readInt();
                                 for (int i = 0; i < playerListSize; i++) {
-                                    playerlist.add(new ValueTrios<>(DataTypeIO.readUUID(input), DataTypeIO.readString(input, StandardCharsets.UTF_8), input.readInt()));
+                                    playerlist.add(new ValueTrios<>(
+                                            DataTypeIO.readUUID(input),
+                                            DataTypeIO.readString(input, StandardCharsets.UTF_8),
+                                            input.readInt()
+                                    ));
                                 }
                                 @SuppressWarnings("unchecked")
-                                CompletableFuture<List<ValueTrios<UUID, String, Integer>>> future = (CompletableFuture<List<ValueTrios<UUID, String, Integer>>>) toComplete.remove(requestUUID);
+                                CompletableFuture<List<ValueTrios<UUID, String, Integer>>> future = (CompletableFuture<List<ValueTrios<UUID, String, Integer>>>) toComplete.remove(
+                                        requestUUID);
                                 if (future != null) {
                                     future.complete(playerlist);
                                 }
@@ -406,12 +462,21 @@ public class BungeeMessageListener implements PluginMessageListener {
                         long time = input.readLong();
                         ICPlayer senderPlayer = ICPlayerFactory.getICPlayer(senderUUID);
                         if (senderPlayer != null && senderPlayer.isLocal()) {
-                            List<SignedMessageModificationData> modData = InteractiveChat.signedMessageModificationData.get(senderUUID);
+                            List<SignedMessageModificationData> modData = InteractiveChat.signedMessageModificationData.get(
+                                    senderUUID);
                             if (modData == null) {
-                                InteractiveChat.signedMessageModificationData.putIfAbsent(senderUUID, Collections.synchronizedList(new LinkedList<>()));
+                                InteractiveChat.signedMessageModificationData.putIfAbsent(
+                                        senderUUID,
+                                        Collections.synchronizedList(new LinkedList<>())
+                                );
                                 modData = InteractiveChat.signedMessageModificationData.get(senderUUID);
                             }
-                            modData.add(new SignedMessageModificationData(senderUUID, time, originalMessage, modifiedMessage));
+                            modData.add(new SignedMessageModificationData(
+                                    senderUUID,
+                                    time,
+                                    originalMessage,
+                                    modifiedMessage
+                            ));
                         }
                         break;
                     case 0x14:
@@ -430,7 +495,11 @@ public class BungeeMessageListener implements PluginMessageListener {
                         String command = DataTypeIO.readString(input, StandardCharsets.UTF_8);
                         Player player4 = Bukkit.getPlayer(playerUUID5);
                         if (player4 != null) {
-                            Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> PlayerUtils.dispatchCommandAsPlayer(player4, command));
+                            FoliaUtil.scheduler
+                                  .runTask(
+                                          player4,
+                                          () -> PlayerUtils.dispatchCommandAsPlayer(player4, command)
+                                  );
                         }
                         break;
                     case 0xFF:
@@ -438,7 +507,10 @@ public class BungeeMessageListener implements PluginMessageListener {
                         int dataLength = input.readInt();
                         byte[] customData = new byte[dataLength];
                         input.readFully(customData);
-                        ProxyCustomDataRecievedEvent dataEvent = new ProxyCustomDataRecievedEvent(customChannel, customData);
+                        ProxyCustomDataRecievedEvent dataEvent = new ProxyCustomDataRecievedEvent(
+                                customChannel,
+                                customData
+                        );
                         Bukkit.getPluginManager().callEvent(dataEvent);
                         break;
                 }

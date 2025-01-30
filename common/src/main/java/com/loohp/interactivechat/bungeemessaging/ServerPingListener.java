@@ -27,10 +27,10 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.WrappedServerPing;
 import com.loohp.interactivechat.InteractiveChat;
 import com.loohp.interactivechat.registry.Registry;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.json.simple.JSONObject;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +52,10 @@ public class ServerPingListener implements Listener {
     }
 
     public static void listen() {
-        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().optionAsync().plugin(InteractiveChat.plugin).types(PacketType.Handshake.Client.SET_PROTOCOL)) {
+        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                         .optionAsync()
+                                                                                         .plugin(InteractiveChat.plugin)
+                                                                                         .types(PacketType.Handshake.Client.SET_PROTOCOL)) {
             @Override
             public void onPacketReceiving(PacketEvent event) {
                 PacketContainer packet = event.getPacket();
@@ -62,7 +65,10 @@ public class ServerPingListener implements Listener {
                 }
             }
         });
-        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().optionAsync().plugin(InteractiveChat.plugin).types(PacketType.Status.Server.SERVER_INFO)) {
+        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                         .optionAsync()
+                                                                                         .plugin(InteractiveChat.plugin)
+                                                                                         .types(PacketType.Status.Server.SERVER_INFO)) {
             @Override
             public void onPacketSending(PacketEvent event) {
                 PacketContainer packet = event.getPacket();
@@ -74,7 +80,7 @@ public class ServerPingListener implements Listener {
             }
         });
 
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             REQUESTS.entrySet().removeIf(entry -> System.currentTimeMillis() > entry.getValue());
         }, 0, 20);
     }

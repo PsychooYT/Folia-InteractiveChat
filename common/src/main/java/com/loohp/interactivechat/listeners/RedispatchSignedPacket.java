@@ -30,8 +30,8 @@ import com.loohp.interactivechat.utils.MCVersion;
 import com.loohp.interactivechat.utils.ModernChatSigningUtils;
 import com.loohp.interactivechat.utils.PlayerUtils;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.concurrent.ExecutionException;
 
@@ -40,11 +40,15 @@ public class RedispatchSignedPacket {
     public static void packetListener() {
         PacketType[] packetTypes;
         if (InteractiveChat.version.isNewerOrEqualTo(MCVersion.V1_20_5)) {
-            packetTypes = new PacketType[] {PacketType.Play.Client.CHAT_COMMAND_SIGNED, PacketType.Play.Client.CHAT_COMMAND, PacketType.Play.Client.CHAT};
+            packetTypes = new PacketType[]{PacketType.Play.Client.CHAT_COMMAND_SIGNED, PacketType.Play.Client.CHAT_COMMAND, PacketType.Play.Client.CHAT};
         } else {
-            packetTypes = new PacketType[] {PacketType.Play.Client.CHAT_COMMAND, PacketType.Play.Client.CHAT};
+            packetTypes = new PacketType[]{PacketType.Play.Client.CHAT_COMMAND, PacketType.Play.Client.CHAT};
         }
-        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().plugin(InteractiveChat.plugin).listenerPriority(ListenerPriority.MONITOR).types(packetTypes)) {
+        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                         .plugin(InteractiveChat.plugin)
+                                                                                         .listenerPriority(
+                                                                                                 ListenerPriority.MONITOR)
+                                                                                         .types(packetTypes)) {
             @Override
             public void onPacketSending(PacketEvent event) {
                 //do nothing
@@ -69,21 +73,27 @@ public class RedispatchSignedPacket {
                             event.setReadOnly(false);
                             event.setCancelled(true);
                             event.setReadOnly(true);
-                            Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> player.chat(message));
+                            FoliaUtil.scheduler.runTask(player, () -> player.chat(message));
                         } else {
                             if (!ModernChatSigningUtils.isChatMessageIllegal(message)) {
                                 event.setReadOnly(false);
                                 event.setCancelled(true);
                                 event.setReadOnly(true);
                                 if (player.isConversing()) {
-                                    Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> player.acceptConversationInput(message));
+                                    FoliaUtil.scheduler.runTask(player, () -> player.acceptConversationInput(message));
                                     if (!InteractiveChat.skipDetectSpamRateWhenDispatchingUnsignedPackets) {
-                                        Bukkit.getScheduler().runTaskAsynchronously(InteractiveChat.plugin, () -> ModernChatSigningUtils.detectRateSpam(player, message));
+                                        FoliaUtil.scheduler.runTaskAsynchronously(() -> ModernChatSigningUtils.detectRateSpam(
+                                                player,
+                                                message
+                                        ));
                                     }
                                 } else {
-                                    Bukkit.getScheduler().runTaskAsynchronously(InteractiveChat.plugin, () -> {
+                                    FoliaUtil.scheduler.runTaskAsynchronously(() -> {
                                         try {
-                                            Object decorated = ModernChatSigningUtils.getChatDecorator(player, LegacyComponentSerializer.legacySection().deserialize(message)).get();
+                                            Object decorated = ModernChatSigningUtils.getChatDecorator(
+                                                    player,
+                                                    LegacyComponentSerializer.legacySection().deserialize(message)
+                                            ).get();
                                             PlayerUtils.chatAsPlayer(player, message, decorated);
                                             if (!InteractiveChat.skipDetectSpamRateWhenDispatchingUnsignedPackets) {
                                                 ModernChatSigningUtils.detectRateSpam(player, message);
@@ -99,12 +109,13 @@ public class RedispatchSignedPacket {
                 } else {
                     if (InteractiveChat.forceUnsignedChatCommandPackets && packet.getModifier().size() > 3) {
                         Object argumentSignature = packet.getModifier().read(3);
-                        if (ModernChatSigningUtils.isArgumentSignatureClass(argumentSignature) && !ModernChatSigningUtils.getArgumentSignatureEntries(argumentSignature).isEmpty()) {
+                        if (ModernChatSigningUtils.isArgumentSignatureClass(argumentSignature) && !ModernChatSigningUtils.getArgumentSignatureEntries(
+                                argumentSignature).isEmpty()) {
                             String command = "/" + packet.getStrings().read(0);
                             event.setReadOnly(false);
                             event.setCancelled(true);
                             event.setReadOnly(true);
-                            Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> {
+                            FoliaUtil.scheduler.runTask(player, () -> {
                                 PlayerUtils.dispatchCommandAsPlayer(player, command);
                                 if (!InteractiveChat.skipDetectSpamRateWhenDispatchingUnsignedPackets) {
                                     ModernChatSigningUtils.detectRateSpam(player, command);
@@ -116,7 +127,11 @@ public class RedispatchSignedPacket {
             }
         });
 
-        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().plugin(InteractiveChat.plugin).listenerPriority(ListenerPriority.HIGH).types(PacketType.Play.Server.SERVER_DATA)) {
+        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                         .plugin(InteractiveChat.plugin)
+                                                                                         .listenerPriority(
+                                                                                                 ListenerPriority.HIGH)
+                                                                                         .types(PacketType.Play.Server.SERVER_DATA)) {
             @Override
             public void onPacketSending(PacketEvent event) {
                 if (event.isPlayerTemporary() || event.isCancelled()) {

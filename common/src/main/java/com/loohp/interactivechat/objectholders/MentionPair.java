@@ -21,7 +21,8 @@
 package com.loohp.interactivechat.objectholders;
 
 import com.loohp.interactivechat.InteractiveChat;
-import org.bukkit.Bukkit;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
+import org.tjdev.util.tjpluginutil.spigot.scheduler.universalscheduler.scheduling.tasks.MyScheduledTask;
 
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class MentionPair {
     private final UUID sender;
     private final UUID receiver;
     private final long timestamp;
-    private final int taskid;
+    private final MyScheduledTask taskid;
 
     public MentionPair(UUID sender, UUID reciever) {
         this.sender = sender;
@@ -48,17 +49,17 @@ public class MentionPair {
     }
 
     public void remove() {
-        Bukkit.getScheduler().cancelTask(taskid);
+        taskid.cancel();
         InteractiveChat.mentionPair.remove(this);
     }
 
-    private int run() {
-        return Bukkit.getScheduler().runTaskTimer(InteractiveChat.plugin, () -> {
+    private MyScheduledTask run() {
+        return FoliaUtil.scheduler.runTaskTimer(() -> {
             if ((System.currentTimeMillis() - timestamp) > 3000) {
-                Bukkit.getScheduler().cancelTask(taskid);
+                taskid.cancel();
                 InteractiveChat.mentionPair.remove(this);
             }
-        }, 0, 5).getTaskId();
+        }, 0, 5);
     }
 
     @Override
@@ -67,7 +68,7 @@ public class MentionPair {
         int result = 1;
         result = prime * result + ((receiver == null) ? 0 : receiver.hashCode());
         result = prime * result + ((sender == null) ? 0 : sender.hashCode());
-        result = prime * result + taskid;
+        result = prime * result + taskid.hashCode();
         result = prime * result + (int) (timestamp ^ (timestamp >>> 32));
         return result;
     }

@@ -44,12 +44,9 @@ import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.form.SimpleForm;
 import org.geysermc.floodgate.api.FloodgateApi;
 import org.geysermc.floodgate.api.player.FloodgatePlayer;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FloodgateHook implements Listener {
@@ -96,7 +93,8 @@ public class FloodgateHook implements Listener {
             List<Component> components = new ArrayList<>(list);
             Collections.reverse(components);
             for (Component component : components) {
-                builder.button(InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(component, InteractiveChat.language));
+                builder.button(InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                                 .serialize(component, InteractiveChat.language));
             }
             builder.validResultHandler(response -> {
                 int index = response.clickedButtonId();
@@ -110,15 +108,26 @@ public class FloodgateHook implements Listener {
     }
 
     public static void sendEventsForm(UUID uuid, Component message) {
-        StringBuilder sb = new StringBuilder(InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(message, InteractiveChat.language));
+        StringBuilder sb = new StringBuilder(InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                                               .serialize(
+                                                                                       message,
+                                                                                       InteractiveChat.language
+                                                                               ));
         for (ValuePairs<Component, Component> pair : extractHoverTexts(message)) {
-            sb.append("\n\n").append(InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(pair.getFirst(), InteractiveChat.language)).append("\n")
-                    .append(InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(pair.getSecond(), InteractiveChat.language));
+            sb.append("\n\n")
+              .append(InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                        .serialize(pair.getFirst(), InteractiveChat.language))
+              .append("\n")
+              .append(InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                        .serialize(pair.getSecond(), InteractiveChat.language));
         }
-        SimpleForm.Builder builder = SimpleForm.builder().title(InteractiveChat.bedrockEventsMenuTitle).content(sb.toString());
+        SimpleForm.Builder builder = SimpleForm.builder()
+                                               .title(InteractiveChat.bedrockEventsMenuTitle)
+                                               .content(sb.toString());
         List<ValueTrios<Component, String, ClickEvent.Action>> clicks = extractClickCommands(message);
         for (ValueTrios<Component, String, ClickEvent.Action> trio : clicks) {
-            builder.button(InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(trio.getFirst(), InteractiveChat.language));
+            builder.button(InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                             .serialize(trio.getFirst(), InteractiveChat.language));
         }
         builder.validResultHandler(response -> {
             int index = response.clickedButtonId();
@@ -143,11 +152,19 @@ public class FloodgateHook implements Listener {
             return;
         }
         CustomForm.Builder builder = CustomForm.builder().title(InteractiveChat.bedrockEventsMenuRunSuggested)
-                .input(InteractiveChatComponentSerializer.bungeecordApiLegacy().serialize(clickComponent, InteractiveChat.language), suggestedCommand, suggestedCommand)
-                .validResultHandler(response -> {
-                    handleRunCommand(uuid, response.asInput());
-                })
-                .closedOrInvalidResultHandler(() -> sendEventsForm(uuid, message));
+                                               .input(
+                                                       InteractiveChatComponentSerializer.bungeecordApiLegacy()
+                                                                                         .serialize(
+                                                                                                 clickComponent,
+                                                                                                 InteractiveChat.language
+                                                                                         ),
+                                                       suggestedCommand,
+                                                       suggestedCommand
+                                               )
+                                               .validResultHandler(response -> {
+                                                   handleRunCommand(uuid, response.asInput());
+                                               })
+                                               .closedOrInvalidResultHandler(() -> sendEventsForm(uuid, message));
         FloodgateApi.getInstance().sendForm(uuid, builder);
     }
 
@@ -162,7 +179,7 @@ public class FloodgateHook implements Listener {
         } else {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> PlayerUtils.dispatchCommandAsPlayer(player, command));
+                FoliaUtil.scheduler.runTask(() -> PlayerUtils.dispatchCommandAsPlayer(player, command));
             }
         }
     }
@@ -198,7 +215,8 @@ public class FloodgateHook implements Listener {
         Component optimizeEvents = ComponentCompacting.optimizeEvents(Component.empty().children(flattened));
         for (Component c : optimizeEvents.children()) {
             ClickEvent clickEvent = c.clickEvent();
-            if (clickEvent != null && (clickEvent.action().equals(ClickEvent.Action.RUN_COMMAND) || clickEvent.action().equals(ClickEvent.Action.SUGGEST_COMMAND))) {
+            if (clickEvent != null && (clickEvent.action().equals(ClickEvent.Action.RUN_COMMAND) || clickEvent.action()
+                                                                                                              .equals(ClickEvent.Action.SUGGEST_COMMAND))) {
                 result.add(new ValueTrios<>(c, clickEvent.value(), clickEvent.action()));
             }
         }

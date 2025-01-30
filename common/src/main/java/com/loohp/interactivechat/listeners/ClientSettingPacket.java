@@ -31,14 +31,18 @@ import com.loohp.interactivechat.nms.NMS;
 import com.loohp.interactivechat.utils.ChatColorUtils;
 import com.loohp.interactivechat.utils.MCVersion;
 import com.loohp.interactivechat.utils.PlayerUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 public class ClientSettingPacket {
 
     public static void clientSettingsListener() {
         if (InteractiveChat.version.isNewerOrEqualTo(MCVersion.V1_20_2)) {
-            InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().plugin(InteractiveChat.plugin).listenerPriority(ListenerPriority.MONITOR).types(PacketType.Configuration.Client.CLIENT_INFORMATION)) {
+            InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                             .plugin(InteractiveChat.plugin)
+                                                                                             .listenerPriority(
+                                                                                                     ListenerPriority.MONITOR)
+                                                                                             .types(PacketType.Configuration.Client.CLIENT_INFORMATION)) {
                 @Override
                 public void onPacketSending(PacketEvent event) {
                     //do nothing
@@ -50,7 +54,11 @@ public class ClientSettingPacket {
                 }
             });
         } else {
-            InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().plugin(InteractiveChat.plugin).listenerPriority(ListenerPriority.MONITOR).types(PacketType.Play.Client.SETTINGS)) {
+            InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                             .plugin(InteractiveChat.plugin)
+                                                                                             .listenerPriority(
+                                                                                                     ListenerPriority.MONITOR)
+                                                                                             .types(PacketType.Play.Client.SETTINGS)) {
                 @Override
                 public void onPacketSending(PacketEvent event) {
                     //do nothing
@@ -73,9 +81,15 @@ public class ClientSettingPacket {
         boolean colorSettings = NMS.getInstance().getColorSettingsFromClientInformationPacket(packet);
         boolean originalColorSettings = PlayerUtils.canChatColor(player);
         if (originalColorSettings && !colorSettings) {
-            Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> player.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', ConfigManager.getConfig().getString("Messages.ColorsDisabled"))), 5);
+            FoliaUtil.scheduler.runTaskLater(() -> player.sendMessage(ChatColorUtils.translateAlternateColorCodes(
+                    '&',
+                    ConfigManager.getConfig().getString("Messages.ColorsDisabled")
+            )), 5);
         } else if (!originalColorSettings && colorSettings) {
-            Bukkit.getScheduler().runTaskLater(InteractiveChat.plugin, () -> player.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', ConfigManager.getConfig().getString("Messages.ColorsReEnabled"))), 5);
+            FoliaUtil.scheduler.runTaskLater(() -> player.sendMessage(ChatColorUtils.translateAlternateColorCodes(
+                    '&',
+                    ConfigManager.getConfig().getString("Messages.ColorsReEnabled")
+            )), 5);
         }
     }
 

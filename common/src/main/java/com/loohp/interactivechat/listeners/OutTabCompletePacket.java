@@ -32,26 +32,18 @@ import com.loohp.interactivechat.nms.NMS;
 import com.loohp.interactivechat.objectholders.ICPlayer;
 import com.loohp.interactivechat.objectholders.ICPlayerFactory;
 import com.loohp.interactivechat.objectholders.ValuePairs;
-import com.loohp.interactivechat.utils.ChatColorUtils;
-import com.loohp.interactivechat.utils.ComponentStyling;
-import com.loohp.interactivechat.utils.InteractiveChatComponentSerializer;
-import com.loohp.interactivechat.utils.PlaceholderParser;
-import com.loohp.interactivechat.utils.PlayerUtils;
+import com.loohp.interactivechat.utils.*;
 import com.mojang.brigadier.Message;
 import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class OutTabCompletePacket {
@@ -59,7 +51,7 @@ public class OutTabCompletePacket {
     private static AtomicReference<Map<String, UUID>> playernames = new AtomicReference<>(new HashMap<>());
 
     public static void tabCompleteListener() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(InteractiveChat.plugin, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             if (InteractiveChat.useTooltipOnTab) {
                 Map<String, UUID> playernames = new HashMap<>();
                 for (ICPlayer player : ICPlayerFactory.getOnlineICPlayers()) {
@@ -72,14 +64,21 @@ public class OutTabCompletePacket {
                         playernames.put(ChatColorUtils.stripColor(name), player.getUniqueId());
                     }
                 }
-                Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> OutTabCompletePacket.playernames.set(playernames));
+                FoliaUtil.scheduler
+                        .runTask(() -> OutTabCompletePacket.playernames.set(playernames));
             }
         }, 0, 100);
 
-        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params().optionAsync().plugin(InteractiveChat.plugin).listenerPriority(ListenerPriority.HIGHEST).types(PacketType.Play.Server.TAB_COMPLETE)) {
+        InteractiveChat.protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params()
+                                                                                         .optionAsync()
+                                                                                         .plugin(InteractiveChat.plugin)
+                                                                                         .listenerPriority(
+                                                                                                 ListenerPriority.HIGHEST)
+                                                                                         .types(PacketType.Play.Server.TAB_COMPLETE)) {
             @Override
             public void onPacketSending(PacketEvent event) {
-                if (!event.isFiltered() || event.isCancelled() || !event.getPacketType().equals(PacketType.Play.Server.TAB_COMPLETE) || event.isPlayerTemporary()) {
+                if (!event.isFiltered() || event.isCancelled() || !event.getPacketType()
+                                                                        .equals(PacketType.Play.Server.TAB_COMPLETE) || event.isPlayerTemporary()) {
                     return;
                 }
 
@@ -109,12 +108,25 @@ public class OutTabCompletePacket {
                                 }
                             }
                             if (icplayer != null) {
-                                Component component = LegacyComponentSerializer.legacySection().deserialize(ChatColorUtils.translateAlternateColorCodes('&', PlaceholderParser.parse(icplayer, InteractiveChat.tabTooltip)));
+                                Component component = LegacyComponentSerializer.legacySection()
+                                                                               .deserialize(ChatColorUtils.translateAlternateColorCodes(
+                                                                                       '&',
+                                                                                       PlaceholderParser.parse(
+                                                                                               icplayer,
+                                                                                               InteractiveChat.tabTooltip
+                                                                                       )
+                                                                               ));
                                 if (!PlayerUtils.canChatColor(tabCompleter)) {
                                     component = ComponentStyling.stripColor(component);
                                 }
-                                String json = InteractiveChat.version.isLegacyRGB() ? InteractiveChatComponentSerializer.legacyGson().serialize(component) : InteractiveChatComponentSerializer.gson().serialize(component);
-                                newMatches.add(new Suggestion(range, text, (Message) WrappedChatComponent.fromJson(json).getHandle()));
+                                String json = InteractiveChat.version.isLegacyRGB() ?
+                                              InteractiveChatComponentSerializer.legacyGson().serialize(component) :
+                                              InteractiveChatComponentSerializer.gson().serialize(component);
+                                newMatches.add(new Suggestion(
+                                        range,
+                                        text,
+                                        (Message) WrappedChatComponent.fromJson(json).getHandle()
+                                ));
                             } else {
                                 newMatches.add(suggestion);
                             }
@@ -124,11 +136,16 @@ public class OutTabCompletePacket {
                     } else {
                         String tooltip = text.substring(pos + 1);
                         text = text.substring(0, pos);
-                        newMatches.add(new Suggestion(range, text, (Message) WrappedChatComponent.fromJson(tooltip).getHandle()));
+                        newMatches.add(new Suggestion(
+                                range,
+                                text,
+                                (Message) WrappedChatComponent.fromJson(tooltip).getHandle()
+                        ));
                     }
                 }
 
-                event.setPacket(NMS.getInstance().createCommandSuggestionPacket(id, new Suggestions(range, newMatches)));
+                event.setPacket(NMS.getInstance()
+                                   .createCommandSuggestionPacket(id, new Suggestions(range, newMatches)));
             }
         });
     }

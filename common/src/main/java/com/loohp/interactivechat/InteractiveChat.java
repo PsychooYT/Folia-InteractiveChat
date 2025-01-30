@@ -40,38 +40,16 @@ import com.loohp.interactivechat.hooks.excellentenchants.ExcellentEnchantsHook;
 import com.loohp.interactivechat.hooks.floodgate.FloodgateHook;
 import com.loohp.interactivechat.hooks.luckperms.LuckPermsEvents;
 import com.loohp.interactivechat.hooks.venturechat.VentureChatInjection;
-import com.loohp.interactivechat.listeners.ChatEvents;
-import com.loohp.interactivechat.listeners.ClientSettingPacket;
-import com.loohp.interactivechat.listeners.InventoryEvents;
-import com.loohp.interactivechat.listeners.MapViewer;
-import com.loohp.interactivechat.listeners.OutMessagePacket;
-import com.loohp.interactivechat.listeners.OutTabCompletePacket;
-import com.loohp.interactivechat.listeners.PaperChatEvents;
-import com.loohp.interactivechat.listeners.PlayerEvents;
-import com.loohp.interactivechat.listeners.RedispatchSignedPacket;
+import com.loohp.interactivechat.listeners.*;
 import com.loohp.interactivechat.metrics.Charts;
 import com.loohp.interactivechat.metrics.Metrics;
 import com.loohp.interactivechat.modules.MentionDisplay;
 import com.loohp.interactivechat.modules.PlayernameDisplay;
 import com.loohp.interactivechat.modules.ProcessExternalMessage;
-import com.loohp.interactivechat.objectholders.ConcurrentCacheHashMap;
-import com.loohp.interactivechat.objectholders.ICPlaceholder;
-import com.loohp.interactivechat.objectholders.ICPlayer;
-import com.loohp.interactivechat.objectholders.ICPlayerFactory;
-import com.loohp.interactivechat.objectholders.LogFilter;
-import com.loohp.interactivechat.objectholders.MentionPair;
-import com.loohp.interactivechat.objectholders.ModernChatCompletionTask;
-import com.loohp.interactivechat.objectholders.NicknameManager;
-import com.loohp.interactivechat.objectholders.PlaceholderCooldownManager;
-import com.loohp.interactivechat.objectholders.SignedMessageModificationData;
-import com.loohp.interactivechat.objectholders.ValuePairs;
+import com.loohp.interactivechat.objectholders.*;
 import com.loohp.interactivechat.placeholderapi.Placeholders;
 import com.loohp.interactivechat.updater.Updater;
-import com.loohp.interactivechat.utils.InteractiveChatComponentSerializer;
-import com.loohp.interactivechat.utils.InventoryUtils;
-import com.loohp.interactivechat.utils.MCVersion;
-import com.loohp.interactivechat.utils.PlaceholderParser;
-import com.loohp.interactivechat.utils.PlayerUtils;
+import com.loohp.interactivechat.utils.*;
 import github.scarsz.discordsrv.DiscordSRV;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -92,20 +70,11 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.simpleyaml.configuration.file.YamlFile;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -264,12 +233,30 @@ public class InteractiveChat extends JavaPlugin {
     public static long itemDisplayTimeout = 300000;
     public static boolean hideLodestoneCompassPos = false;
 
-    public static ConcurrentCacheHashMap<String, Inventory> itemDisplay = new ConcurrentCacheHashMap<>(InteractiveChat.itemDisplayTimeout, 60000);
-    public static ConcurrentCacheHashMap<String, Inventory> inventoryDisplay = new ConcurrentCacheHashMap<>(InteractiveChat.itemDisplayTimeout, 60000);
-    public static ConcurrentCacheHashMap<String, Inventory> inventoryDisplay1Upper = new ConcurrentCacheHashMap<>(InteractiveChat.itemDisplayTimeout, 60000);
-    public static ConcurrentCacheHashMap<String, Inventory> inventoryDisplay1Lower = new ConcurrentCacheHashMap<>(InteractiveChat.itemDisplayTimeout, 60000);
-    public static ConcurrentCacheHashMap<String, Inventory> enderDisplay = new ConcurrentCacheHashMap<>(InteractiveChat.itemDisplayTimeout, 60000);
-    public static ConcurrentCacheHashMap<String, ItemStack> mapDisplay = new ConcurrentCacheHashMap<>(InteractiveChat.itemDisplayTimeout, 60000);
+    public static ConcurrentCacheHashMap<String, Inventory> itemDisplay = new ConcurrentCacheHashMap<>(
+            InteractiveChat.itemDisplayTimeout,
+            60000
+    );
+    public static ConcurrentCacheHashMap<String, Inventory> inventoryDisplay = new ConcurrentCacheHashMap<>(
+            InteractiveChat.itemDisplayTimeout,
+            60000
+    );
+    public static ConcurrentCacheHashMap<String, Inventory> inventoryDisplay1Upper = new ConcurrentCacheHashMap<>(
+            InteractiveChat.itemDisplayTimeout,
+            60000
+    );
+    public static ConcurrentCacheHashMap<String, Inventory> inventoryDisplay1Lower = new ConcurrentCacheHashMap<>(
+            InteractiveChat.itemDisplayTimeout,
+            60000
+    );
+    public static ConcurrentCacheHashMap<String, Inventory> enderDisplay = new ConcurrentCacheHashMap<>(
+            InteractiveChat.itemDisplayTimeout,
+            60000
+    );
+    public static ConcurrentCacheHashMap<String, ItemStack> mapDisplay = new ConcurrentCacheHashMap<>(
+            InteractiveChat.itemDisplayTimeout,
+            60000
+    );
     public static Set<Inventory> upperSharedInventory = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
     public static Set<Inventory> lowerSharedInventory = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
@@ -363,7 +350,8 @@ public class InteractiveChat extends JavaPlugin {
     public static void closeSharedInventoryViews() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Inventory topInventory = player.getOpenInventory().getTopInventory();
-            if (InteractiveChat.containerDisplay.containsKey(topInventory) || InteractiveChat.upperSharedInventory.contains(topInventory)) {
+            if (InteractiveChat.containerDisplay.containsKey(topInventory) || InteractiveChat.upperSharedInventory.contains(
+                    topInventory)) {
                 player.closeInventory();
                 if (InteractiveChat.viewingInv1.remove(player.getUniqueId()) != null) {
                     InventoryUtils.restorePlayerInventory(player);
@@ -387,16 +375,23 @@ public class InteractiveChat extends JavaPlugin {
     public static void sendMessage(CommandSender sender, Component component) {
         if (InteractiveChat.version.isLegacyRGB()) {
             try {
-                sender.spigot().sendMessage(ComponentSerializer.parse(InteractiveChatComponentSerializer.legacyGson().serialize(component)));
+                sender.spigot()
+                      .sendMessage(ComponentSerializer.parse(InteractiveChatComponentSerializer.legacyGson()
+                                                                                               .serialize(component)));
             } catch (Throwable e) {
                 if (sender instanceof Player) {
-                    ((Player) sender).spigot().sendMessage(ComponentSerializer.parse(InteractiveChatComponentSerializer.legacyGson().serialize(component)));
+                    ((Player) sender).spigot()
+                                     .sendMessage(ComponentSerializer.parse(InteractiveChatComponentSerializer.legacyGson()
+                                                                                                              .serialize(
+                                                                                                                      component)));
                 } else {
                     sender.sendMessage(LegacyComponentSerializer.legacySection().serialize(component));
                 }
             }
         } else {
-            sender.spigot().sendMessage(ComponentSerializer.parse(InteractiveChatComponentSerializer.gson().serialize(component)));
+            sender.spigot()
+                  .sendMessage(ComponentSerializer.parse(InteractiveChatComponentSerializer.gson()
+                                                                                           .serialize(component)));
         }
     }
 
@@ -425,11 +420,16 @@ public class InteractiveChat extends JavaPlugin {
 
         Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
 
-        exactMinecraftVersion = Bukkit.getVersion().substring(Bukkit.getVersion().indexOf("(") + 5, Bukkit.getVersion().indexOf(")"));
+        exactMinecraftVersion = Bukkit.getVersion()
+                                      .substring(
+                                              Bukkit.getVersion().indexOf("(") + 5,
+                                              Bukkit.getVersion().indexOf(")")
+                                      );
         version = MCVersion.resolve();
 
         if (!version.isSupported()) {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] This version of minecraft is unsupported! (" + version.toString() + ")");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.RED + "[InteractiveChat] This version of minecraft is unsupported! (" + version.toString() + ")");
         }
 
         if (!getDataFolder().exists()) {
@@ -450,15 +450,21 @@ public class InteractiveChat extends JavaPlugin {
         bungeecordMode = ConfigManager.getConfig().getBoolean("Settings.Bungeecord");
 
         if (bungeecordMode) {
-            getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[InteractiveChat] Registering Plugin Messaging Channels for bungeecord...");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.GREEN + "[InteractiveChat] Registering Plugin Messaging Channels for bungeecord...");
             getServer().getMessenger().registerOutgoingPluginChannel(this, "interchat:main");
-            getServer().getMessenger().registerIncomingPluginChannel(this, "interchat:main", bungeeMessageListener = new BungeeMessageListener(this));
+            getServer().getMessenger()
+                       .registerIncomingPluginChannel(
+                               this,
+                               "interchat:main",
+                               bungeeMessageListener = new BungeeMessageListener(this)
+                       );
             getServer().getPluginManager().registerEvents(new ServerPingListener(), this);
             ServerPingListener.listen();
 
-            Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
                 if (parsePAPIOnMainThread) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                    FoliaUtil.scheduler.runTask(() -> {
                         for (Player player : Bukkit.getOnlinePlayers()) {
                             PlaceholderParser.parse(ICPlayerFactory.getICPlayer(player), usePlayerNameHoverText);
                             PlaceholderParser.parse(ICPlayerFactory.getICPlayer(player), usePlayerNameClickValue);
@@ -472,14 +478,14 @@ public class InteractiveChat extends JavaPlugin {
                 }
             }, 0, 100);
 
-            Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            FoliaUtil.scheduler.runTaskTimer(() -> {
                 Map<UUID, Boolean> vanishStates = new HashMap<>();
                 for (ICPlayer player : ICPlayerFactory.getOnlineICPlayers()) {
                     if (player.isLocal()) {
                         vanishStates.put(player.getUniqueId(), player.isVanished());
                     }
                 }
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                FoliaUtil.scheduler.runTaskAsynchronously(() -> {
                     try {
                         BungeeMessageSender.updatePlayersVanished(System.currentTimeMillis(), vanishStates);
                     } catch (Exception e) {
@@ -490,7 +496,7 @@ public class InteractiveChat extends JavaPlugin {
         }
 
         BiConsumer<String, Inventory> inventoryRemovalListener = (hash, inv) -> {
-            Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> closeInventoryViews(inv));
+            FoliaUtil.scheduler.runTask(() -> closeInventoryViews(inv));
         };
         itemDisplay.registerRemovalListener(inventoryRemovalListener);
         inventoryDisplay.registerRemovalListener(inventoryRemovalListener);
@@ -499,7 +505,7 @@ public class InteractiveChat extends JavaPlugin {
         enderDisplay.registerRemovalListener(inventoryRemovalListener);
 
         mapDisplay.registerRemovalListener((hash, item) -> {
-            Bukkit.getScheduler().runTask(InteractiveChat.plugin, () -> {
+            FoliaUtil.scheduler.runTask(() -> {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     boolean removed = MapViewer.MAP_VIEWERS.remove(player, item);
                     if (removed) {
@@ -511,7 +517,16 @@ public class InteractiveChat extends JavaPlugin {
         });
 
         YamlFile storage = ConfigManager.getStorageConfig();
-        database = new Database(false, getDataFolder(), storage.getString("StorageType"), storage.getString("MYSQL.Host"), storage.getString("MYSQL.Database"), storage.getString("MYSQL.Username"), storage.getString("MYSQL.Password"), storage.getInt("MYSQL.Port"));
+        database = new Database(
+                false,
+                getDataFolder(),
+                storage.getString("StorageType"),
+                storage.getString("MYSQL.Host"),
+                storage.getString("MYSQL.Database"),
+                storage.getString("MYSQL.Username"),
+                storage.getString("MYSQL.Password"),
+                storage.getInt("MYSQL.Port")
+        );
         database.setup();
 
         placeholderCooldownManager = new PlaceholderCooldownManager();
@@ -544,86 +559,101 @@ public class InteractiveChat extends JavaPlugin {
         perms = rsp.getProvider();
 
         if (isPluginEnabled("CMI", false)) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into CMI!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into CMI!");
             cmiHook = true;
         }
 
         if (isPluginEnabled("Essentials")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Essentials!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Essentials!");
             essentialsHook = true;
             getServer().getPluginManager().registerEvents(new EssentialsNicknames(), this);
             EssentialsNicknames.init();
         }
 
         if (isPluginEnabled("EssentialsDiscord")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into EssentialsDiscord!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into EssentialsDiscord!");
             essentialsDiscordHook = true;
             getServer().getPluginManager().registerEvents(new EssentialsDiscord(), this);
         }
 
         if (isPluginEnabled("DiscordSRV", false)) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into DiscordSRV!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into DiscordSRV!");
             DiscordSRV.api.subscribe(new DiscordSRVEvents());
             discordSrvHook = true;
         }
 
         if (isPluginEnabled("ViaVersion")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ViaVersion!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ViaVersion!");
             viaVersionHook = true;
         }
 
         if (isPluginEnabled("ProtocolSupport")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ProtocolSupport!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ProtocolSupport!");
             protocolSupportHook = true;
         }
 
         if (isPluginEnabled("eco")) {
             EcoHook.init();
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Eco (Core)!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Eco (Core)!");
             ecoHook = true;
         }
 
         if (isPluginEnabled("ExcellentEnchants")) {
             ExcellentEnchantsHook.init();
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ExcellentEnchants!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ExcellentEnchants!");
             excellentenchantsHook = true;
         }
 
         if (isPluginEnabled("LuckPerms")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into LuckPerms!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into LuckPerms!");
             new LuckPermsEvents(this);
             luckPermsHook = true;
         }
 
         if (isPluginEnabled("MysqlPlayerDataBridge")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into MysqlPlayerDataBridge!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into MysqlPlayerDataBridge!");
             mysqlPDBHook = true;
         }
 
         if (isPluginEnabled("ChatControlRed", false)) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ChatControlRed!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into ChatControlRed!");
             chatControlRedHook = true;
         }
 
         if (isPluginEnabled("floodgate")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Floodgate!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Floodgate!");
             getServer().getPluginManager().registerEvents(new FloodgateHook(), this);
             floodgateHook = true;
         }
 
         if (isPluginEnabled("Triton")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Triton!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.AQUA + "[InteractiveChat] InteractiveChat has hooked into Triton!");
             tritonHook = true;
         }
 
         if (isPluginEnabled("VentureChat")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.LIGHT_PURPLE + "[InteractiveChat] InteractiveChat has injected into VentureChat!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.LIGHT_PURPLE + "[InteractiveChat] InteractiveChat has injected into VentureChat!");
             VentureChatInjection._init_();
             ventureChatHook = true;
         }
 
         if (isPluginEnabled("dynmap")) {
-            getServer().getConsoleSender().sendMessage(ChatColor.LIGHT_PURPLE + "[InteractiveChat] InteractiveChat has injected into Dynmap!");
+            getServer().getConsoleSender()
+                       .sendMessage(ChatColor.LIGHT_PURPLE + "[InteractiveChat] InteractiveChat has injected into Dynmap!");
             DynmapListener._init_();
             dynmapHook = true;
         }
@@ -640,33 +670,46 @@ public class InteractiveChat extends JavaPlugin {
         ClientSettingPacket.clientSettingsListener();
 
         playerDataManager = new PlayerDataManager(this, database);
-        nicknameManager = new NicknameManager(uuid -> InteractiveChatAPI.getNicknames(uuid), () -> InteractiveChatAPI.getOnlineICPlayers().stream().filter(each -> each.isLocal()).map(each -> each.getUniqueId()).collect(Collectors.toSet()), 5000, (uuid, nicknames) -> {
-            if (InteractiveChat.bungeecordMode) {
-                Player bukkitPlayer = Bukkit.getPlayer(uuid);
-                if (bukkitPlayer != null) {
-                    Set<String> nicks = new HashSet<>(nicknames);
-                    if (InteractiveChat.useBukkitDisplayName) {
-                        nicks.add(bukkitPlayer.getDisplayName());
-                    }
-                    try {
-                        BungeeMessageSender.forwardNicknames(System.currentTimeMillis(), uuid, nicks);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        nicknameManager = new NicknameManager(
+                uuid -> InteractiveChatAPI.getNicknames(uuid),
+                () -> InteractiveChatAPI.getOnlineICPlayers()
+                                        .stream()
+                                        .filter(each -> each.isLocal())
+                                        .map(each -> each.getUniqueId())
+                                        .collect(Collectors.toSet()),
+                5000,
+                (uuid, nicknames) -> {
+                    if (InteractiveChat.bungeecordMode) {
+                        Player bukkitPlayer = Bukkit.getPlayer(uuid);
+                        if (bukkitPlayer != null) {
+                            Set<String> nicks = new HashSet<>(nicknames);
+                            if (InteractiveChat.useBukkitDisplayName) {
+                                nicks.add(bukkitPlayer.getDisplayName());
+                            }
+                            try {
+                                BungeeMessageSender.forwardNicknames(System.currentTimeMillis(), uuid, nicks);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
                 }
-            }
-        });
+        );
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new Placeholders().register();
         }
 
-        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[InteractiveChat] InteractiveChat has been Enabled!");
+        getServer().getConsoleSender()
+                   .sendMessage(ChatColor.GREEN + "[InteractiveChat] InteractiveChat has been Enabled!");
 
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             if (queueRemoteUpdate && Bukkit.getOnlinePlayers().size() > 0) {
                 try {
-                    if (BungeeMessageSender.resetAndForwardPlaceholderList(System.currentTimeMillis(), InteractiveChat.placeholderList.values())) {
+                    if (BungeeMessageSender.resetAndForwardPlaceholderList(
+                            System.currentTimeMillis(),
+                            InteractiveChat.placeholderList.values()
+                    )) {
                         queueRemoteUpdate = false;
                     }
                 } catch (Exception e) {
@@ -681,7 +724,8 @@ public class InteractiveChat extends JavaPlugin {
             Method method = logger.getClass().getMethod("addFilter", Filter.class);
             method.invoke(logger, filter);
         } catch (Exception e) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "[InteractiveChat] Unable to add filter to logger, safely skipping...");
+            Bukkit.getConsoleSender()
+                  .sendMessage(ChatColor.YELLOW + "[InteractiveChat] Unable to add filter to logger, safely skipping...");
         }
 
         gc();
@@ -697,11 +741,12 @@ public class InteractiveChat extends JavaPlugin {
             OutMessagePacket.getAsyncChatSendingExecutor().close();
         } catch (Exception ignored) {
         }
-        getServer().getConsoleSender().sendMessage(ChatColor.RED + "[InteractiveChat] InteractiveChat has been Disabled!");
+        getServer().getConsoleSender()
+                   .sendMessage(ChatColor.RED + "[InteractiveChat] InteractiveChat has been Disabled!");
     }
 
     private void gc() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+        FoliaUtil.scheduler.runTaskTimerAsynchronously(() -> {
             itemDisplay.cleanUp();
             inventoryDisplay.cleanUp();
             inventoryDisplay1Upper.cleanUp();

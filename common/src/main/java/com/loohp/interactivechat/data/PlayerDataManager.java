@@ -27,6 +27,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +70,7 @@ public class PlayerDataManager implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        FoliaUtil.scheduler.runTaskAsynchronously(() -> {
             if (!database.playerExists(playerUUID)) {
                 database.createPlayer(playerUUID, player.getName());
             }
@@ -82,7 +83,7 @@ public class PlayerDataManager implements Listener {
     public void onLeave(PlayerQuitEvent event) {
         PlayerData pd = data.remove(event.getPlayer().getUniqueId());
         if (pd != null) {
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> pd.save());
+            FoliaUtil.scheduler.runTaskAsynchronously(() -> pd.save());
         }
     }
 

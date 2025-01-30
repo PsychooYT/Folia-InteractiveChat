@@ -27,16 +27,17 @@ import net.kyori.adventure.bossbar.BossBar.Color;
 import net.kyori.adventure.bossbar.BossBar.Flag;
 import net.kyori.adventure.bossbar.BossBar.Overlay;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
+import org.tjdev.util.tjpluginutil.spigot.scheduler.universalscheduler.UniversalRunnable;
 
 import java.util.Set;
 
 public abstract class BossBarUpdater implements BossBar.Listener, AutoCloseable {
 
     public static void countdownBossBar(BossBarUpdater updater, int ticks, int removeDelay) {
-        new BukkitRunnable() {
+        new UniversalRunnable() {
             int tick = 0;
 
             @Override
@@ -47,7 +48,7 @@ public abstract class BossBarUpdater implements BossBar.Listener, AutoCloseable 
                 bossbar.progress(Math.max(current, 0));
                 if (current < 0) {
                     this.cancel();
-                    Bukkit.getScheduler().runTaskLaterAsynchronously(InteractiveChat.plugin, () -> updater.close(), removeDelay);
+                    FoliaUtil.scheduler.runTaskLaterAsynchronously(() -> updater.close(), removeDelay);
                 }
             }
         }.runTaskTimerAsynchronously(InteractiveChat.plugin, 0, 1);
