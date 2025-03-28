@@ -20,50 +20,52 @@
 
 package com.loohp.interactivechat.objectholders;
 
-import com.comphenix.protocol.events.PacketContainer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.loohp.interactivechat.InteractiveChat;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 import org.tjdev.util.tjpluginutil.spigot.scheduler.universalscheduler.scheduling.tasks.MyScheduledTask;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
-public class AsyncChatSendingExecutor implements AutoCloseable {
+public abstract class AsyncChatSendingExecutor implements AutoCloseable {
 
     private final LongSupplier executionWaitTime;
     private final long killThreadAfter;
 
     private final ReentrantLock executeLock;
-    private final Map<UUID, Queue<MessageOrderInfo>> messagesOrder;
-    private final Queue<OutboundPacket> sendingQueue;
+    public final Map<UUID, Queue<MessageOrderInfo>> messagesOrder;
+    public final Queue<OutboundPacket> sendingQueue;
     private final ThreadPoolExecutor executor;
     private final Map<Future<?>, ExecutingTaskData> executingTasks;
-    private final Map<UUID, Map<UUID, OutboundPacket>> waitingPackets;
+    public final Map<UUID, Map<UUID, OutboundPacket>> waitingPackets;
     private final Map<UUID, Long> lastSuccessfulCheck;
 
     private final List<MyScheduledTask> taskIds;
     private final AtomicBoolean isValid;
 
     public AsyncChatSendingExecutor(LongSupplier executionWaitTime, long killThreadAfter) {
-        ThreadFactory factory = new ThreadFactoryBuilder().setNameFormat(
-                "InteractiveChat Async ChatMessage Processing Thread #%d").build();
+        ThreadFactory factory = new ThreadFactoryBuilder().setNameFormat("InteractiveChat Async ChatMessage Processing Thread #%d").build();
         int coreSize = Math.max(4, InteractiveChat.asyncChatThreadPoolExecutorCoreSize);
         int maxSize = Math.max(coreSize, InteractiveChat.asyncChatThreadPoolExecutorMaxSize);
-        this.executor = new ThreadPoolExecutor(
-                coreSize,
-                maxSize,
-                60L,
-                TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(),
-                factory
-        );
+        this.executor = new ThreadPoolExecutor(coreSize, maxSize, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), factory);
         this.executeLock = new ReentrantLock(true);
         this.executionWaitTime = executionWaitTime;
         this.killThreadAfter = killThreadAfter;
@@ -98,8 +100,11 @@ public class AsyncChatSendingExecutor implements AutoCloseable {
         }
     }
 
-    public void send(PacketContainer packet, Player player, UUID id) {
+    public void send(Object packet, Player player, UUID id) {
+        // No need to cast to PacketContainer. packetSender() will cast to PacketContainer later, and this method's packet variable will always be a PacketContainer.
+        // If someone is supplying something that *isn't* a PacketContainer, then it's layer 8.
         OutboundPacket outboundPacket = new OutboundPacket(player, packet);
+
         Queue<MessageOrderInfo> queue = messagesOrder.get(player.getUniqueId());
         if (queue == null) {
             sendingQueue.add(outboundPacket);
@@ -125,7 +130,7 @@ public class AsyncChatSendingExecutor implements AutoCloseable {
     public synchronized void close() throws Exception {
         isValid.set(false);
         for (MyScheduledTask id : taskIds) {
-            id.cancel();
+            if(id != null) id.cancel();
         }
         executor.shutdown();
     }
@@ -194,20 +199,7 @@ public class AsyncChatSendingExecutor implements AutoCloseable {
         }, "InteractiveChat Async ChatPacket Ordered Sending Thread").start();
     }
 
-    private MyScheduledTask packetSender() {
-        return FoliaUtil.scheduler.runTaskTimer(() -> {
-            while (!sendingQueue.isEmpty()) {
-                OutboundPacket out = sendingQueue.poll();
-                try {
-                    if (out.getReciever().isOnline()) {
-                        InteractiveChat.protocolManager.sendServerPacket(out.getReciever(), out.getPacket(), false);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 0, 1);
-    }
+    public abstract MyScheduledTask packetSender();
 
     private void monitor() {
         new Thread(() -> {
@@ -281,7 +273,7 @@ public class AsyncChatSendingExecutor implements AutoCloseable {
 
     }
 
-    private static class MessageOrderInfo {
+    public static class MessageOrderInfo {
 
         private final UUID id;
         private long time;

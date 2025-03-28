@@ -28,7 +28,6 @@ import net.kyori.adventure.bossbar.BossBar.Flag;
 import net.kyori.adventure.bossbar.BossBar.Overlay;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.tjdev.util.tjpluginutil.spigot.FoliaUtil;
 import org.tjdev.util.tjpluginutil.spigot.scheduler.universalscheduler.UniversalRunnable;
 
