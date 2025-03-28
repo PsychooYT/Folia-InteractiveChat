@@ -63,8 +63,10 @@ public class PlaceholderParser {
         if (InteractiveChat.parsePAPIOnMainThread && !Bukkit.isPrimaryThread()) {
             try {
                 CompletableFuture<String> future = new CompletableFuture<>();
-                FoliaUtil.scheduler
-                      .runTask(() -> future.complete(parse0(offlineICPlayer, str)));
+                Runnable r = () -> future.complete(parse0(offlineICPlayer, str));
+                if (offlineICPlayer.getPlayer() != null && offlineICPlayer.getPlayer().isLocal())
+                    FoliaUtil.scheduler.runTask(offlineICPlayer.getPlayer().getLocalPlayer(), r);
+                else FoliaUtil.scheduler.runTask(r);
                 return future.get(1500, TimeUnit.MILLISECONDS);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
